@@ -1,0 +1,51 @@
+/* style.css */
+
+body, html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif; /* Example font */
+}
+
+body {
+    background-image: url('low.jpg'); /* Update with your image path */
+    background-size: cover; /* This makes the image cover the entire area */
+    background-position: center; /* This centers the image */
+    background-repeat: no-repeat; /* This stops the image from repeating */
+    background-attachment: fixed; /* Optional: This makes the background fixed during scroll */
+}
+
+
+main {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+img {
+    height: 40%;
+    opacity: 100%;
+    padding-top: 1%;
+}
+
+#gift {
+    height: 40%;
+}
+
+#back-button {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    color: #333;
+    text-decoration: none;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}

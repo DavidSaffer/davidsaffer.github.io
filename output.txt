@@ -1,0 +1,322 @@
+Filename: index.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Be My Valentine</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <!-- Add other head elements like meta tags -->
+</head>
+<body>
+    <header>
+        <!-- Navigation bar, if necessary -->
+    </header>
+    <main>
+        <section id="valentine-message">
+            <h1>Desiree</h1>
+            <p>Will you be my valentine?</p>
+            <p id="noMessage"></p>
+            <!-- More content -->
+        </section>
+        <section id="response">
+            <button id="noButton">No</button>
+            <button id="yesButton">Yes</button>
+
+            
+            <!-- JavaScript to handle button clicks -->
+        </section>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
+---- End of index.html ----
+
+Filename: no.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>No?????</title>
+    <link rel="stylesheet" type="text/css" href="no.css">
+    <!-- Add other head elements like meta tags -->
+</head>
+<body>
+    <a href="index.html" id="back-button">Back</a>
+    <p id="message">are you sure you meant to hit no?? it was probally a misclick <br> try the back button^^^</p>
+    <header>
+        
+        <!-- Navigation bar, if necessary -->
+    </header>
+    <main>
+        <div id="content-container">
+            <img src="recite.PNG" alt="Left Image" id="left-image">
+            
+            <section id="valentine-message">
+                <h1>Are you sure??</h1>
+                <p>Recite the bible in japinese to confirm</p>
+                
+                <textarea id="textbox" rows="10" cols="50" placeholder="天と地の創造"></textarea>
+                <br>
+                <br>
+                <button id="confirm" disabled>Confirm</button>
+                <p id="timer">(You have 30 secconds before the page resets)</p>
+            </section>
+
+            <img src="bible.PNG" alt="Right Image" id="right-image">
+        </div>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>---- End of no.html ----
+
+Filename: yes.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Yes</title>
+    <link rel="stylesheet" type="text/css" href="yes.css">
+    <!-- Add other head elements like meta tags -->
+</head>
+<body>
+    <a href="index.html" id="back-button">Back</a>
+    <header>
+        <!-- Navigation bar, if necessary -->
+    </header>
+    <main>
+        <img src="sonaheart.PNG" alt="">
+        <section id="valentine-message">
+            
+            <h1>Yay</h1>
+            <!-- More content -->
+            <a href="https://global.cainiao.com/newDetail.htm?mailNoList=LB354174246SG&otherMailNoList=" target="_blank">Here is your tracking info</a>
+            <br>
+            
+        </section>
+        <img id= "gift" src="gift.png" alt=""> 
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
+---- End of yes.html ----
+
+Filename: script.js
+document.addEventListener('DOMContentLoaded', function() {
+    let noButtonClickCount = 0;
+    let messages = [
+        "HEY! what do you think you're doing???",
+        "CHILLLLLL",
+        "Are you sure you want to do this??",
+        "Lets be rational here desiree",
+        "Fine I guess you are free to choose -____-"
+    ]
+    // Function to move the 'No' button
+    function moveNoButton() {
+        const noButton = document.getElementById('noButton');
+        const maxX = window.innerWidth - noButton.clientWidth;
+        const maxY = window.innerHeight - noButton.clientHeight;
+        const randomX = Math.floor(Math.random() * maxX);
+        const randomY = Math.floor(Math.random() * maxY);
+
+        noButton.style.position = 'absolute';
+        noButton.style.left = randomX + 'px';
+        noButton.style.top = randomY + 'px';
+    }
+
+    // Event listener for 'Yes' button
+    document.getElementById('yesButton').addEventListener('click', function() {
+        window.location.href = 'yes.html'; // Redirect to 'yes.html' when clicked
+    });
+
+    // Event listener for 'No' button
+    document.getElementById('noButton').addEventListener('click', function() {
+        noButtonClickCount++;
+        if (noButtonClickCount < 6) {
+            document.getElementById("noMessage").innerHTML = messages[noButtonClickCount-1];
+            // Move the button
+            moveNoButton();
+        } else {
+            // Redirect after the third click
+            window.location.href = 'no.html';
+        }
+    });
+    
+});
+---- End of script.js ----
+
+Filename: no.css
+/* style.css */
+
+body, html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif; /* Example font */
+}
+
+body {
+    background-image: url('low.jpg'); /* Update with your image path */
+    background-size: cover; /* This makes the image cover the entire area */
+    background-position: center; /* This centers the image */
+    background-repeat: no-repeat; /* This stops the image from repeating */
+    background-attachment: fixed; /* Optional: This makes the background fixed during scroll */
+}
+
+
+main {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+img {
+    height: 40%;
+    opacity: 100%;
+    padding-top: 1%;
+}
+
+#gift {
+    height: 40%;
+}
+
+#textbox {
+    width: 400px;
+    height: 200px;
+}
+
+#content-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+#left-image, #right-image {
+    height: 300px;
+    padding: 1%;
+}
+
+#back-button {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    color: #333;
+    text-decoration: none;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+#message {
+    position: absolute;
+    top: 50px; /* Adjust as needed */
+    left: 10px;
+}---- End of no.css ----
+
+Filename: style.css
+/* style.css */
+
+body, html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif; /* Example font */
+}
+
+body {
+    background-image: url('low.jpg'); /* Update with your image path */
+    background-size: cover; /* This makes the image cover the entire area */
+    background-position: center; /* This centers the image */
+    background-repeat: no-repeat; /* This stops the image from repeating */
+    background-attachment: fixed; /* Optional: This makes the background fixed during scroll */
+}
+
+
+main {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+/* Style for the buttons */
+#yesButton, #noButton {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#yesButton {
+    background-color: green;
+    color: white;
+}
+
+#noButton {
+    background-color: red;
+    color: white;
+}
+---- End of style.css ----
+
+Filename: yes.css
+/* style.css */
+
+body, html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif; /* Example font */
+}
+
+body {
+    background-image: url('low.jpg'); /* Update with your image path */
+    background-size: cover; /* This makes the image cover the entire area */
+    background-position: center; /* This centers the image */
+    background-repeat: no-repeat; /* This stops the image from repeating */
+    background-attachment: fixed; /* Optional: This makes the background fixed during scroll */
+}
+
+
+main {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+img {
+    height: 40%;
+    opacity: 100%;
+    padding-top: 1%;
+}
+
+#gift {
+    height: 40%;
+}
+
+#back-button {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    color: #333;
+    text-decoration: none;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+---- End of yes.css ----
+
