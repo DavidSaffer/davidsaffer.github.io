@@ -37,6 +37,17 @@ img {
     height: 40%;
 }
 
+#content-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#left-image, #right-image {
+    height: 350px;
+    padding: 6%;
+}
+
 #back-button {
     position: absolute;
     top: 10px;
@@ -48,4 +59,25 @@ img {
     text-decoration: none;
     border-radius: 5px;
     border: 1px solid #ccc;
+}
+
+.tracking-link {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+#message {
+    position: absolute;
+    top: 50px; /* Adjust as needed */
+    left: 10px;
+}
+
+#no-wrap {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 2px 0; /* Adjust the value as needed */
 }

@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
+
+    emailjs.init("fh0yRVFrey9e67XJ0"); // Replace with your public key
+
+
+
     let noButtonClickCount = 0;
     let messages = [
         "HEY! what do you think you're doing???",
@@ -12,10 +17,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const noButton = document.getElementById('noButton');
         if (noButtonClickCount < 5) {
             // Move the button to a random position
-            const maxX = window.innerWidth - noButton.clientWidth;
-            const maxY = window.innerHeight - noButton.clientHeight;
-            const randomX = Math.floor(Math.random() * maxX);
-            const randomY = Math.floor(Math.random() * maxY);
+            let randomX, randomY;
+            if (noButtonClickCount === 1) {
+                // First move, stay near the center (70% area)
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+                randomX = centerX + (Math.random() - 0.5) * window.innerWidth * 0.5 - noButton.clientWidth / 2;
+                randomY = centerY + (Math.random() - 0.5) * window.innerHeight * 0.5 - noButton.clientHeight / 2;
+            } else {
+                // Subsequent moves, anywhere on the screen
+                const maxX = window.innerWidth - noButton.clientWidth;
+                const maxY = window.innerHeight - noButton.clientHeight;
+                randomX = Math.floor(Math.random() * maxX);
+                randomY = Math.floor(Math.random() * maxY);
+            }
 
             noButton.style.position = 'absolute';
             noButton.style.left = randomX + 'px';
@@ -28,9 +43,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Event listener for 'Yes' button
     document.getElementById('yesButton').addEventListener('click', function() {
-        window.location.href = 'yes.html'; // Redirect to 'yes.html' when clicked
+        const now = new Date();
+        const formattedDateTime = now.toLocaleString(); // Format date and time
+
+        emailjs.send("service_dt5m0vf", "template_e0w2tb9", { // Replace with your EmailJS service ID and template ID
+            message: "Yes button was clicked at" + formattedDateTime
+        })
+        .then(function(response) {
+            window.location.href = 'yes.html'; // Redirect to 'yes.html' when clicked
+           console.log("SUCCESS", response.status, response.text);
+           
+        }, function(error) {
+           console.log("FAILED", error);
+           window.location.href = 'yes.html'; // Redirect to 'yes.html' when clicked
+        });
     });
 
     // Event listener for 'No' button
@@ -41,8 +68,19 @@ document.addEventListener('DOMContentLoaded', function() {
             // Move the button
             moveNoButton();
         } else {
+            const now = new Date();
+            const formattedDateTime = now.toLocaleString(); // Format date and time
             // Redirect after the third click
-            window.location.href = 'no.html';
+            emailjs.send("service_dt5m0vf", "template_e0w2tb9", { // Replace with your EmailJS service ID and template ID
+                message: "No button was clicked at" + formattedDateTime
+            })
+            .then(function(response) {
+               console.log("SUCCESS", response.status, response.text);
+               window.location.href = 'no.html'; // Redirect to 'no.html' when clicked
+            }, function(error) {
+               console.log("FAILED", error);
+               window.location.href = 'no.html'; // Redirect to 'no.html' when clicked
+            });
         }
     });
 
