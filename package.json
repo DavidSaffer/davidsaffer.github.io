@@ -1,0 +1,23 @@
+{
+  "name": "peer-to-peer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DavidSaffer/valentine.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DavidSaffer/valentine/issues"
+  },
+  "homepage": "https://github.com/DavidSaffer/valentine#readme",
+  "dependencies": {
+    "peer": "^1.0.2"
+  }
+}

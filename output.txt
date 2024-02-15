@@ -1,322 +1,354 @@
 Filename: index.html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Be My Valentine</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <!-- Add other head elements like meta tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelBomber</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="initial_page.css">
+    <link rel="stylesheet" href="lobby.css">
 </head>
 <body>
-    <header>
-        <!-- Navigation bar, if necessary -->
-    </header>
-    <main>
-        <section id="valentine-message">
-            <h1>Desiree</h1>
-            <p>Will you be my valentine?</p>
-            <p id="noMessage"></p>
-            <!-- More content -->
-        </section>
-        <section id="response">
-            <button id="noButton">No</button>
-            <button id="yesButton">Yes</button>
+    <div id="initial_page">
+        <header>
+            <div class="logo">Pixel Bomber</div>
+        </header>
+        <main>
+            <div class="nickname_box">
+                <h1>Choose nickname</h1>
+                <input type="text" id="nickname" placeholder="david">
+                <button id="go_button">Go!</button>
+            </div>
+        </main>        
+    </div>
 
-            
-            <!-- JavaScript to handle button clicks -->
-        </section>
-    </main>
-    <script src="script.js"></script>
-</body>
-</html>
----- End of index.html ----
-
-Filename: no.html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>No?????</title>
-    <link rel="stylesheet" type="text/css" href="no.css">
-    <!-- Add other head elements like meta tags -->
-</head>
-<body>
-    <a href="index.html" id="back-button">Back</a>
-    <p id="message">are you sure you meant to hit no?? it was probally a misclick <br> try the back button^^^</p>
-    <header>
+    <div id="lobby" style="display:none">
         
-        <!-- Navigation bar, if necessary -->
-    </header>
-    <main>
-        <div id="content-container">
-            <img src="recite.PNG" alt="Left Image" id="left-image">
-            
-            <section id="valentine-message">
-                <h1>Are you sure??</h1>
-                <p>Recite the bible in japinese to confirm</p>
-                
-                <textarea id="textbox" rows="10" cols="50" placeholder="天と地の創造"></textarea>
-                <br>
-                <br>
-                <button id="confirm" disabled>Confirm</button>
-                <p id="timer">(You have 30 secconds before the page resets)</p>
-            </section>
-
-            <img src="bible.PNG" alt="Right Image" id="right-image">
+        <div class="lobby-footer">
+            <button id="create_lobby_button">Create Lobby</button>
+            <button id="join_lobby_button">Join Lobby</button>
         </div>
-    </main>
-    <script src="script.js"></script>
+        <div id="lobby_modal" class="modal">
+            <div class="modal_content">
+                <!-- <span class="close" id="close_create_room_modal">&times;</span> -->
+                <h2 id="lobby_modal_title">Title</h2>
+                <input type="text" id="lobby_modal_code" readonly value="YourLobbyCodeHere" style="text-align: center;">
+                <button id="lobby_modal_coppy_button">Copy</button>
+                <!-- <p id="lobby_modal_text"></p> -->
+                <input type="text" id="lobby_modal_input" placeholder="Lobby Code">
+                <button id="lobby_modal_button">Start Game</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game" style="display:none">
+        <p>Game!!</p>
+        <button id="game_button">Send Message</button>
+    </div>
+    
+    <!-- <script src="/socket.io/socket.io.js"></script> -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="client.js"></script>
 </body>
-</html>---- End of no.html ----
+</html>---- End of index.html ----
 
-Filename: yes.html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Yes</title>
-    <link rel="stylesheet" type="text/css" href="yes.css">
-    <!-- Add other head elements like meta tags -->
-</head>
-<body>
-    <a href="index.html" id="back-button">Back</a>
-    <header>
-        <!-- Navigation bar, if necessary -->
-    </header>
-    <main>
-        <img src="sonaheart.PNG" alt="">
-        <section id="valentine-message">
-            
-            <h1>Yay</h1>
-            <!-- More content -->
-            <a href="https://global.cainiao.com/newDetail.htm?mailNoList=LB354174246SG&otherMailNoList=" target="_blank">Here is your tracking info</a>
-            <br>
-            
-        </section>
-        <img id= "gift" src="gift.png" alt=""> 
-    </main>
-    <script src="script.js"></script>
-</body>
-</html>
----- End of yes.html ----
+Filename: client.js
+document.addEventListener("DOMContentLoaded", () => {
 
-Filename: script.js
-document.addEventListener('DOMContentLoaded', function() {
-    let noButtonClickCount = 0;
-    let messages = [
-        "HEY! what do you think you're doing???",
-        "CHILLLLLL",
-        "Are you sure you want to do this??",
-        "Lets be rational here desiree",
-        "Fine I guess you are free to choose -____-"
-    ]
-    // Function to move the 'No' button
-    function moveNoButton() {
-        const noButton = document.getElementById('noButton');
-        const maxX = window.innerWidth - noButton.clientWidth;
-        const maxY = window.innerHeight - noButton.clientHeight;
-        const randomX = Math.floor(Math.random() * maxX);
-        const randomY = Math.floor(Math.random() * maxY);
 
-        noButton.style.position = 'absolute';
-        noButton.style.left = randomX + 'px';
-        noButton.style.top = randomY + 'px';
+    const peer = new Peer();
+      
+    let name = '';
+    let peerId = null;
+
+
+    peer.on('open', function(id) {
+        console.log('My peer ID is: ' + id);
+        peerId = id;
+    });
+
+    // peer.on('data', function(data) {
+    //     console.log('Received', data);
+    // });
+    
+
+    // Query DOM
+    // initial page
+    const initial_page = document.getElementById('initial_page');
+    const name_input = document.getElementById('nickname');
+    const go_button = document.getElementById('go_button');
+
+    go_button.onclick = function() {
+        name = name_input.value;
+        go_to_lobby();
     }
 
-    // Event listener for 'Yes' button
-    document.getElementById('yesButton').addEventListener('click', function() {
-        window.location.href = 'yes.html'; // Redirect to 'yes.html' when clicked
-    });
+    function go_to_lobby() {
+        initial_page.style.display = "none";
+        loby.style.display = "flex";
+    }
 
-    // Event listener for 'No' button
-    document.getElementById('noButton').addEventListener('click', function() {
-        noButtonClickCount++;
-        if (noButtonClickCount < 6) {
-            document.getElementById("noMessage").innerHTML = messages[noButtonClickCount-1];
-            // Move the button
-            moveNoButton();
-        } else {
-            // Redirect after the third click
-            window.location.href = 'no.html';
-        }
-    });
+    // lobby page
+    const loby = document.getElementById('lobby');
     
+    const create_lobby_button = document.getElementById('create_lobby_button');
+    const join_lobby_button = document.getElementById('join_lobby_button');
+    
+    const lobby_modal = document.getElementById('lobby_modal');
+    const lobby_modal_title = document.getElementById('lobby_modal_title');
+    // const lobby_modal_text = document.getElementById('lobby_modal_text');
+    const lobby_modal_input = document.getElementById('lobby_modal_input');
+    const lobby_modal_button = document.getElementById('lobby_modal_button');
+
+    const lobby_modal_coppy_button = document.getElementById('lobby_modal_coppy_button');
+    const lobby_modal_code = document.getElementById('lobby_modal_code');
+
+    function copyLobbyCode() {
+        // Copy the text inside the text field
+        navigator.clipboard.writeText(lobby_modal_code.value)
+            .then(() => {
+                // Optionally, show a message to indicate that the code was copied
+                alert('Copied the lobby code: ' + lobby_modal_code.value);
+            })
+            .catch(err => {
+                console.error('Could not copy text: ', err);
+            });
+    }
+
+    // Set up the click event listener for the copy button
+    lobby_modal_coppy_button.onclick = copyLobbyCode;
+
+    
+    create_lobby_button.onclick = function() {
+        // Set the lobby code to the input's value
+        lobby_modal_code.style.display = "block";
+        lobby_modal_coppy_button.style.display = "block";
+        lobby_modal_code.value = peerId; // Assuming peerId is your lobby code
+
+        // Show the modal
+        lobby_modal.style.display = "block";
+        lobby_modal_title.innerText = "Lobby Code";
+
+        // Automatically select the lobby code text for easy copying (optional)
+        lobby_modal_code.select();
+        lobby_modal_code.setSelectionRange(0, 99999); // For mobile devices
+
+        lobby_modal_input.style.display = "none"; // Hide input
+
+        lobby_modal.style.display = "block";
+        lobby_modal_title.innerText = "Lobby Code";
+
+        // lobby_modal_text.style.display = "block"; // Show text
+        // lobby_modal_text.innerText = peerId;
+
+        lobby_modal_button.onclick = function() {
+            startGame();
+        }
+        
+
+    }
+
+    join_lobby_button.onclick = function() {
+        // lobby_modal_text.style.display = "none"; // Hide text
+        lobby_modal_code.style.display = "none"; // Hide text
+        lobby_modal_coppy_button.style.display = "none"; // Hide button
+
+        lobby_modal.style.display = "block";
+        lobby_modal_title.innerText = "Enter Lobby Code";
+        lobby_modal_input.style.display = "block"; // Show input
+        lobby_modal_input.placeholder = 'Enter Lobby Code...';
+
+        lobby_modal_button.onclick = joinGame;
+        
+        
+    }
+
+    function joinGame() {
+        const lobby_code = lobby_modal_input.value;
+        try {
+            const conn = peer.connect(lobby_code);
+            conn.on('open', () => {
+                console.log('Connected to: ' + conn.peer);
+                conn.send(`Hello! I am ${name}`);
+            });
+
+            conn.on('data', function(data) {
+                console.log(data);
+            });
+        } 
+        catch (error) {
+            console.log(error);
+        }
+        showGame();
+    }
+
+    function startGame() {
+        peer.on('connection', function(conn) {
+            conn.on('data', function(data) {
+                // Will print 'hi!'
+                console.log(data);
+            });
+        });
+        showGame();
+    }
+
+    window.onclick = function(event) {
+        if (event.target == lobby_modal) {
+            lobby_modal.style.display = "none";
+        }
+    }
+
+
+    function showGame() {
+        lobby_modal.style.display = "none";
+        loby.style.display = "none";
+        game.style.display = "flex";
+    }
 });
----- End of script.js ----
+---- End of client.js ----
 
-Filename: no.css
-/* style.css */
-
+Filename: initial_page.css
 body, html {
     height: 100%;
     margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: Arial, sans-serif; /* Example font */
+    font-family: 'Arial', sans-serif;
+    background: grey;
 }
 
-body {
-    background-image: url('low.jpg'); /* Update with your image path */
-    background-size: cover; /* This makes the image cover the entire area */
-    background-position: center; /* This centers the image */
-    background-repeat: no-repeat; /* This stops the image from repeating */
-    background-attachment: fixed; /* Optional: This makes the background fixed during scroll */
-}
-
-
-main {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-}
-
-img {
-    height: 40%;
-    opacity: 100%;
-    padding-top: 1%;
-}
-
-#gift {
-    height: 40%;
-}
-
-#textbox {
-    width: 400px;
-    height: 200px;
-}
-
-#content-container {
+header {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 10px 20px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
-#left-image, #right-image {
-    height: 300px;
-    padding: 1%;
+header .logo {
+    font-size: 2em;
+    font-weight: bold;
+    background: -webkit-linear-gradient(left, #f1c40f, #e67e22);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-#back-button {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    display: inline-block;
-    padding: 10px 20px;
-    background-color: #f8f9fa;
-    color: #333;
-    text-decoration: none;
+.main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.nickname_box {
+    background: rgba(0, 0, 0, 0.7);
     border-radius: 5px;
-    border: 1px solid #ccc;
-}
-
-#message {
-    position: absolute;
-    top: 50px; /* Adjust as needed */
-    left: 10px;
-}---- End of no.css ----
-
-Filename: style.css
-/* style.css */
-
-body, html {
-    height: 100%;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: Arial, sans-serif; /* Example font */
-}
-
-body {
-    background-image: url('low.jpg'); /* Update with your image path */
-    background-size: cover; /* This makes the image cover the entire area */
-    background-position: center; /* This centers the image */
-    background-repeat: no-repeat; /* This stops the image from repeating */
-    background-attachment: fixed; /* Optional: This makes the background fixed during scroll */
-}
-
-
-main {
+    padding: 20px;
     text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
 }
 
-/* Style for the buttons */
-#yesButton, #noButton {
-    margin: 10px;
-    padding: 10px 20px;
-    font-size: 16px;
+.nickname_box h1 {
+    color: #fff;
+}
+
+.nickname_box input {
+    width: 200px;
+    padding: 10px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 5px;
+}
+
+.nickname_box button {
+    width: 60px;
+    padding: 10px;
+    margin-top: 10px;
+    background-color: #e67e22;
+    color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
 }
 
-#yesButton {
-    background-color: green;
-    color: white;
+.nickname_box button:hover {
+    background-color: #f39c12;
 }
 
-#noButton {
-    background-color: red;
-    color: white;
-}
----- End of style.css ----
+---- End of initial_page.css ----
 
-Filename: yes.css
-/* style.css */
-
-body, html {
-    height: 100%;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: Arial, sans-serif; /* Example font */
-}
-
-body {
-    background-image: url('low.jpg'); /* Update with your image path */
-    background-size: cover; /* This makes the image cover the entire area */
-    background-position: center; /* This centers the image */
-    background-repeat: no-repeat; /* This stops the image from repeating */
-    background-attachment: fixed; /* Optional: This makes the background fixed during scroll */
-}
-
-
-main {
-    text-align: center;
-    display: flex;
+Filename: lobby.css
+#lobby {
+    display: none; /* This will be changed dynamically */
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    height: 100%;
+    padding: 20px;
+    background: #2c3e50; /* Dark blue background */
+    color: white;
 }
 
-img {
-    height: 40%;
-    opacity: 100%;
-    padding-top: 1%;
+.lobby-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
 }
 
-#gift {
-    height: 40%;
-}
-
-#back-button {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    display: inline-block;
+.lobby-footer button {
     padding: 10px 20px;
-    background-color: #f8f9fa;
-    color: #333;
-    text-decoration: none;
+    background-color: #3498db;
+    color: white;
+    border: none;
     border-radius: 5px;
-    border: 1px solid #ccc;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-right: 10px; /* Add space between buttons */
 }
----- End of yes.css ----
+
+.lobby-footer button:last-child {
+    margin-right: 0; /* Remove margin from last button */
+}
+
+.lobby-footer button:hover {
+    background-color: #2980b9;
+}
+
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0, 0, 0); /* Fallback color */
+    background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+}
+
+.modal_content {
+    background-color: #fefefe;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    max-width: 500px; /* Maximum width */
+    border-radius: 5px;
+    color: black; /* Text color for the modal */
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+---- End of lobby.css ----
 

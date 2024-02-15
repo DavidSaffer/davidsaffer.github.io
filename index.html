@@ -1,36 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Be My Valentine</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <!-- Add other head elements like meta tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelBomber</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="initial_page.css">
+    <link rel="stylesheet" href="lobby.css">
 </head>
 <body>
-    <header>
-        <!-- Navigation bar, if necessary -->
-    </header>
-    <main>
-        <section id="valentine-message">
-            <h1>Desiree</h1>
-            <p>Will you be my valentine?</p>
-            <p id="noMessage"></p>
-            <!-- More content -->
-        </section>
-        <section id="response">
-            <button id="noButton">No</button>
-            <button id="yesButton">Yes</button>
+    <div id="initial_page">
+        <header>
+            <div class="logo">Pixel Bomber</div>
+        </header>
+        <main>
+            <div class="nickname_box">
+                <h1>Choose nickname</h1>
+                <input type="text" id="nickname" placeholder="david">
+                <button id="go_button">Go!</button>
+            </div>
+        </main>        
+    </div>
 
-            
-            <!-- JavaScript to handle button clicks -->
-        </section>
-    </main>
-    <script src="script.js"></script>
+    <div id="lobby" style="display:none">
+        
+        <div class="lobby-footer">
+            <button id="create_lobby_button">Create Lobby</button>
+            <button id="join_lobby_button">Join Lobby</button>
+        </div>
+        <div id="lobby_modal" class="modal">
+            <div class="modal_content">
+                <!-- <span class="close" id="close_create_room_modal">&times;</span> -->
+                <h2 id="lobby_modal_title">Title</h2>
+                <input type="text" id="lobby_modal_code" readonly value="YourLobbyCodeHere" style="text-align: center;">
+                <button id="lobby_modal_coppy_button">Copy</button>
+                <!-- <p id="lobby_modal_text"></p> -->
+                <input type="text" id="lobby_modal_input" placeholder="Lobby Code">
+                <button id="lobby_modal_button">Start Game</button>
+            </div>
+        </div>
+    </div>
 
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/emailjs-com@2/dist/email.min.js"></script>
-    <script type="text/javascript">
-    (function(){
-        emailjs.init("YOUR_USER_ID"); // Replace with your EmailJS user ID
-    })();
-    </script>
+    <div id="game" style="display:none">
+        <!-- <p>Game!!</p>
+        <button id="game_button">Send Message</button> -->
+        <input type="text" id="game_input" placeholder="Message">
+        <!-- <canvas id="game_canvas" width="800" height="600"></canvas> -->
+    </div>
+    
+    <!-- <script src="/socket.io/socket.io.js"></script> -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="client.js"></script>
 </body>
 </html>
