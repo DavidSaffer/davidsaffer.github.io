@@ -7,6 +7,7 @@
     <link rel="icon" href="favicon.ico">
     <link rel="stylesheet" href="initial_page.css">
     <link rel="stylesheet" href="lobby.css">
+    <link rel="stylesheet" href="game.css">
 </head>
 <body>
     <div id="initial_page">
@@ -42,10 +43,60 @@
     </div>
 
     <div id="game" style="display:none">
+
+        <button id="settingsButton" class="settings-button">Settings</button>
+
+        <div id="game_modal" class="modal">
+            <div class="game_modal_content">
+                <div class="game_modal_header">
+                    <span id="game_modal_lobby_code">Lobby Code: ABCD1234</span>
+                    <button id="game_modal_leave_button" class="team-selection-leave-button">Leave</button>
+                </div>
+                <div class="game_modal_team_selection">
+                    <div class="team_column">
+                        <button class="game_modal_join_button red">Join Red Team</button>
+                        <div class="player_list red_team">
+                            <!-- Default Red Team Members -->
+                            <!-- <div class="player">Red Player 1</div>
+                            <div class="player">Red Player 2</div> -->
+                        </div>
+                    </div>
+                    <div class="team_column">
+                        <button class="game_modal_join_button yellow">Join Spectators</button>
+                        <div class="player_list spectators_team"></div>
+                    </div>
+                    <div class="team_column">
+                        <button class="game_modal_join_button blue">Join Blue Team</button>
+                        <div class="player_list blue_team"></div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+
+        
+        
         <!-- <p>Game!!</p>
         <button id="game_button">Send Message</button> -->
-        <input type="text" id="game_input" placeholder="Message">
-        <!-- <canvas id="game_canvas" width="800" height="600"></canvas> -->
+        <!-- <input type="text" id="game_input" placeholder="Message"> -->
+        <div id="playerInfoContainer">
+            <div class="player-info">
+                <p>Test Player 1</p>
+                <p>Score: 3000</p>
+                <p>Lives: 5</p>
+            </div>
+            <div class="player-info">
+                <p>Test Player 2</p>
+                <p>Score: 4500</p>
+                <p>Lives: 3</p>
+            </div>
+            
+            
+            <!-- Add more default player data as needed -->
+        </div>
+        
+        <canvas id="game_canvas" width="80" height="80"></canvas>
+
     </div>
     
     <!-- <script src="/socket.io/socket.io.js"></script> -->

@@ -130,7 +130,4 @@ dist
 .pnp.*
 
 # Node.js dependencies
-# node_modules/
-
-
-.vscode
+node_modules/
