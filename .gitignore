@@ -131,3 +131,5 @@ dist
 
 # Node.js dependencies
 node_modules/
+
+.vscode/
