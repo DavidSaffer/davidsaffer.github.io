@@ -5,10 +5,12 @@ const AppConfig = {
 };
 
 const GameConfig = {
-    enemySpawnRate: 600, // Spawn an enemy every second
-    enemySpeed: 10,
+    enemySpawnRate: 1000, // Spawn an enemy every second
+    enemySpeed: 2,
     coinSpawnRate: 200, // Spawn a coin every 0.5 seconds
     coinLifespan: 5000, // 5 seconds
+    playerLives: 1,
+    playerSpeed: 15
 
 
 };
@@ -29,10 +31,10 @@ class Player {
         this.action = false;
 
         this.score = 0;
-        this.lives = 3;
+        this.lives = GameConfig.playerLives;
         this.name = '...';
 
-        this.moveSpeed = 15;
+        this.moveSpeed = GameConfig.playerSpeed;
 
         this.dx = 0;
         this.dy = 0;
@@ -55,8 +57,9 @@ class Player {
     }
 
     reset() {
-        this.lives = 3;
+        this.lives = GameConfig.playerLives;
         this.score = 0;
+        this.ready = false;
     }
 
     draw(ctx) {
@@ -242,10 +245,11 @@ class Game {
         this.cWidth = cWidth;
         this.cHeight = cHeight;
         this.players = {};
+        this.spectators = {};
         this.enemies = [];
         this.coins = [];
         this.missile = [];
-        this.paused = false;
+        this.paused = true;
         this.gameOver = false;
         this.enemySpawnRate = gameConfig.enemySpawnRate; // Spawn an enemy every second
         this.coinSpawnRate = gameConfig.coinSpawnRate; // Spawn a coin every 0.5 seconds
@@ -262,6 +266,10 @@ class Game {
 
     // Method to start the game loop
     start() {
+        for (const conn of this.connections) {
+            conn.send({ type: 'gameStarted!' });
+        }
+        this.paused = false;
         new Promise((resolve, reject) => {
             // Check periodically if there are 2 players
             let checkInterval = setInterval(() => {
@@ -288,15 +296,24 @@ class Game {
     }
 
     stop() {
+        for (const conn of this.connections) {
+            conn.send({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
+        }
         if (this.interval) {
             clearInterval(this.interval);
         }
     }
 
+
     restart() {
         // reset players
         Object.values(this.players).forEach(player => {
-            player.reset();
+            // player reset not a function, do it here?
+            player.lives = GameConfig.playerLives;
+            player.score = 0;
+            player.ready = false;
+            //console.log(player);
+            //player.reset();
         });
         this.enemies = [];
         this.coins = [];
@@ -317,11 +334,11 @@ class Game {
     }
 
     updatePlayer(player){
-        // if (player.lives <= 0) {
-        //     player.dx = 0;
-        //     player.dy = 0;
-        //     return;
-        // }
+        if (player.lives <= 0) {
+            player.dx = 0;
+            player.dy = 0;
+            return;
+        }
 
         player.dx = 0;
         player.dy = 0;
@@ -438,7 +455,11 @@ class Game {
         });
     }
 
+
     gameTick() {
+        for (const conn of this.connections) {
+            conn.send({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
+        }
         if (this.paused || this.gameOver) return;
         this.spawnEnemy();
         this.spawnCoin();
@@ -446,18 +467,18 @@ class Game {
         //this.handleMissiles();
         this.updateEntities();
 
-        for (const conn of this.connections) {
-            conn.send({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
-        }
+        
         
         
         const alivePlayers = Object.values(this.players).filter(player => player.lives > 0);
         const deadPlayers = Object.values(this.players).filter(player => player.lives <= 0);
-
+        const numPlayers = Object.values(this.players).length;
         // Check if game should continue based on alive and dead players' scores
         let gameShouldEnd = false;
         if (alivePlayers.length === 0) {
             gameShouldEnd = true; // All players are dead, end the game
+        } else if (numPlayers === 1) {
+            gameShouldEnd = false; // sing player game
         } else if (alivePlayers.length === 1 && deadPlayers.every(deadPlayer => alivePlayers[0].score > deadPlayer.score)) {
             // Only one player is alive and has a higher score than all dead players, end the game
             gameShouldEnd = true;
@@ -465,7 +486,8 @@ class Game {
 
         if (gameShouldEnd) {
             this.gameOver = true;
-            console.log("game over")
+            console.log("game over");
+            
             for (const conn of this.connections) {
                 conn.send({ type: 'gameOver', players: this.players });
             }
@@ -505,8 +527,11 @@ function renderGame(ctx, players, enemies, coins, missile, paused) {
     if (Object.keys(players).length === 0) {
         return;
     }
+    document.getElementById('game_modal_start_button').innerText = paused ? 'Start' : 'Pause';
     //document.getElementById('pauseButton').innerText = paused ? 'Start' : 'Pause';
     ctx.clearRect(0, 0, AppConfig.canvasWidth, AppConfig.canvasHeight);
+
+    playerInfoContainer.innerHTML = '';
     Object.values(players).forEach((player, index) => {
         ctx.fillStyle = player.color;
         if (player.lives <= 0) {
@@ -514,16 +539,16 @@ function renderGame(ctx, players, enemies, coins, missile, paused) {
         }
         ctx.fillRect(player.x, player.y, player.width, player.height);
 
-        //clear playerinfo container
-        const playerInfoContainer = document.querySelectorAll('.player-info')[index];
-        if (playerInfoContainer) {
-            // Update the text content for lives and score
-            playerInfoContainer.innerHTML = `
-                <p>${player.name}</p>
-                <p>Score: ${player.score}</p>
-                <p>Lives: ${player.lives}</p>
-            `;
-        }
+        // update the UI scoreboard
+        const playerDiv = document.createElement('div');
+        playerDiv.className = 'player-info';
+        playerDiv.innerHTML = `
+            <p>${player.name}</p>
+            <p>Score: ${player.score}</p>
+            <p>Lives: ${player.lives}</p>
+        `;
+        playerInfoContainer.appendChild(playerDiv);
+
     });
     enemies.forEach(enemy => {
         ctx.fillStyle = 'red';
@@ -661,8 +686,13 @@ document.addEventListener("DOMContentLoaded", () => {
     canvas.width = AppConfig.canvasWidth;
     canvas.height = AppConfig.canvasHeight;
 
-    const game_input = document.getElementById('game_input');
-    let conn;
+    let isHost = false;
+    let hostGameInstance = null;
+
+    let conn; // client connection to host, used for sending wasd commands
+    let sendUserInputs = false;
+    let clientPlayer = null;
+    
     let red_team = [];
     let spectators = [];
     let blue_team = [];
@@ -676,6 +706,7 @@ document.addEventListener("DOMContentLoaded", () => {
         down: false,
         action: false
     }
+    let justPressed = false;
     function userInput(obj, connection) {
         document.addEventListener('keydown', function(e) {
             if (e.key === "ArrowLeft" || e.key === "a") {
@@ -738,6 +769,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (conn === undefined) {
             return;
         }
+        if (isHost) {
+            return; // Double check
+        }
+        if (!sendUserInputs) {
+            return
+        }
         let userCommands = {
             left: obj.left,
             up: obj.up,
@@ -750,58 +787,94 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function startGame() {
         console.log('Starting game');
+        isHost = true;
+        conn = null;
+        sendUserInputs = false;
         // Main JavaScript file
         
         // Create a new game instance
         const gameInstance = new Game(AppConfig.canvasWidth, AppConfig.canvasHeight, peerId, GameConfig);
+        hostGameInstance = gameInstance;
         gameInstance.ctx = ctx;
         let myPlayer = new Player(AppConfig.canvasWidth, AppConfig.canvasHeight, 100, 100, peerId, 0.05);
         myPlayer.name = name;
         userInput(myPlayer);
-        gameInstance.players[peerId] = myPlayer;
-        gameInstance.start();
+        clientPlayer = myPlayer;
+        //gameInstance.players[peerId] = myPlayer;
 
         let gameWorker;
-
         if (window.Worker) {
             gameWorker = new Worker('webworker.js');
-
             gameWorker.onmessage = function(e) {
                 if (e.data.status === 'tick') {
                     // Handle the tick - Update game logic, etc.
                     gameInstance.gameTick();
+                    // Check if the game ended
+                    if (gameInstance.gameOver) {
+                        showGameEndModal(myPlayer, gameInstance.players);
+                        gameWorker.postMessage({ command: 'stop' });
+                        const readyButton = document.getElementById('ready_up_button');
+                        readyButton.onclick = function() {
+                            document.getElementById(myPlayer.id).innerText = `${myPlayer.name}: ${myPlayer.score}`;
+                            myPlayer.ready = !myPlayer.ready;
+                            if (myPlayer.ready) {
+                                document.getElementById(myPlayer.id).innerText += ' - Ready';
+                            }
+                            for (const con of gameInstance.connections) {
+                                con.send({ type: 'playerReady', player: myPlayer });
+                            }
+                            
+                            let everyPlayerReady = Object.values(gameInstance.players).every(player => player.ready);
+                            if (everyPlayerReady) {
+                                gameInstance.restart();
+                                gameWorker.postMessage({ command: 'start', fps: 60 });
+                                showGame();
+                            }
+                        }
+                    }
                 }
             };
 
-            // To start the game loop
-            gameWorker.postMessage({ command: 'start', fps: 60 });
+            
 
-            // Optionally, to stop the interval when not needed
-            gameWorker.postMessage({ command: 'stop' });
 
-            // // Handle visibility change to pause/resume game loop
-            // document.addEventListener('visibilitychange', () => {
-            //     if (document.visibilityState === 'hidden') {
-            //         gameWorker.postMessage({ command: 'stop' });
-            //     } else {
-            //         gameWorker.postMessage({ command: 'start', fps: 60 });
-            //     }
-            // });
         } else {
             console.log('Your browser does not support Web Workers.');
+            alert('Your browser does not support Web Workers. You cannot host a game, but you can join one');
+            go_to_lobby();
         }
 
-        console.log('gameInstance: ', gameInstance);
-
+        let connectedClients = {};
+        // When someone connects to this host
         peer.on('connection', function(connection) {
-
             console.log("connected ");
             conn = connection;
             gameInstance.connections.push(conn);
-            // Listen for data from the connection
+            connectedClients[connection.id] = connection;
+            // Listen for data from the clients
             conn.on('data', function(data) {
-                if (data.type === 'game_input_change') {
-                    game_input.value = data.message;
+                if (data.type === 'initial_data_request') {
+                    conn.send({ type: 'initial_data', red_team: red_team, blue_team: blue_team, spectators: spectators, isPaused: gameInstance.paused});
+                }
+                if (data.type === 'pause clicked') {
+                    // Locally update the pause/start button state
+                    const startButton = document.getElementById('game_modal_start_button');
+                    // Update the game instance
+                    gameInstance.paused = !gameInstance.paused;
+
+                    startButton.innerText = gameInstance.paused ? 'Start' : 'Pause';
+                    if (gameInstance.paused) {
+                        gameInstance.stop();
+                        gameWorker.postMessage({ command: 'stop' });
+                        showGameModal();
+                    }
+                    else {
+                        gameInstance.start();
+                        gameWorker.postMessage({ command: 'start', fps: 60 });
+                        showGame();
+                    }
+                    // Tell everybody else about pause state
+                    conn.send({ type: 'gameState', players: gameInstance.players, enemies: gameInstance.enemies, coins: gameInstance.coins, missile: gameInstance.missile, paused: gameInstance.paused });
                 }
                 if (data.type === 'team_update') {
                     red_team = data.red_team;
@@ -810,19 +883,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     updatePlayerList('Red', red_team);
                     updatePlayerList('Blue', blue_team);
                     updatePlayerList('Spectators', spectators);
-                    if (red_team.length > 0 && blue_team.length > 0) {
-                        gameInstance.start();
-                        gameWorker.postMessage({ command: 'start', fps: 60 });
-                    }
-                    myPlayer.color = playerColor;
-                    conn.send({ type: 'team_update', red_team, blue_team, spectators });
                 }
-                if (data.type === 'initial_data_request') {
-                    conn.send({ type: 'initial_data', red_team, blue_team, spectators });
+                
+                if (data.type === 'set_gameInstance_player') {
+                    gameInstance.players[data.player.id] = data.player;
                 }
-                if (data.type === 'playerConnect') {
-                    gameInstance.players[data.myPlayer.id] = data.myPlayer;
+                if (data.type === 'remove_gameInstance_player') {
+                    delete gameInstance.players[data.player.id];
                 }
+
                 if (data.type === 'userInput') {
                     gameInstance.players[data.id].left = data.commands.left;
                     gameInstance.players[data.id].up = data.commands.up;
@@ -830,68 +899,129 @@ document.addEventListener("DOMContentLoaded", () => {
                     gameInstance.players[data.id].down = data.commands.down;
                     gameInstance.players[data.id].action = data.commands.action;
                 }
+                if (data.type === 'playerReady') {
+                    gameInstance.players[data.player.id].ready = data.player.ready;
+                    //update the UI
+                    document.getElementById(data.player.id).innerText = `${data.player.name}: ${data.player.score}`;
+                    if (data.player.ready) {
+                        document.getElementById(data.player.id).innerText += ' - Ready';
+                    }
+
+                    let allPlayersReady = Object.values(gameInstance.players).every(player => player.ready);
+                    if (allPlayersReady) {
+                        conn.send({ type: 'gameRestarting' });
+                        gameInstance.restart();
+                        gameWorker.postMessage({ command: 'start', fps: 60 });
+                        showGame();
+                    }                
+                }
             });
 
-            // // Broadcast game input changes to all connected peers
-            // game_input.addEventListener('input', function() {
-            //     conn.send({ type: 'game_input_change', message: game_input.value });
-            // });
         });
 
+        // Handle when host clicks start / pause button
+        const startButton = document.getElementById('game_modal_start_button');
+        startButton.onclick = function() {  
+            gameInstance.paused = !gameInstance.paused;
+            startButton.innerText = gameInstance.paused ? 'Start' : 'Pause';
+            if (gameInstance.paused) {
+                gameInstance.stop(); // Stop the game local rendering
+                gameWorker.postMessage({ command: 'stop' }); // Stop the game loop
+            }
+            else {
+                gameInstance.start(); // Renders the game locally
+                gameWorker.postMessage({ command: 'start', fps: 60 }); // Start the game loop
+                //hide modal
+                showGame();
+            }
+        }
+
+        document.querySelectorAll('.game_modal_join_button').forEach(button => {
+            button.onclick = function() {
+                const team = this.classList.contains('red') ? 'Red Team' :
+                            this.classList.contains('blue') ? 'Blue Team' : 'Spectators';
+                joinTeam(team);
+            }
+        });
+    
+        // Function to handle joining a team
+        function joinTeam(team) {
+            console.log('Joining', team);
+            // remove from existing team
+            red_team = red_team.filter(player => player.peerId !== peerId);
+            blue_team = blue_team.filter(player => player.peerId !== peerId);
+            spectators = spectators.filter(player => player.peerId !== peerId);
+            if (team === 'Red Team') {
+                red_team.push({ name, peerId });
+                myPlayer.color = 'red';
+                gameInstance.players[peerId] = myPlayer;
+            } else if (team === 'Blue Team') {
+                blue_team.push({ name, peerId });
+                myPlayer.color = 'blue';
+                gameInstance.players[peerId] = myPlayer;
+            } else {
+                spectators.push({ name, peerId });
+                myPlayer.color = 'grey';
+                delete gameInstance.players[peerId];
+            }
+
+            
+            updatePlayerList('Red', red_team);
+            updatePlayerList('Blue', blue_team);
+            updatePlayerList('spectators', spectators);
+            // Send the updated team lists to the clients
+            Object.values(connectedClients).forEach(conn => {
+                conn.send({ type: 'team_update', red_team, blue_team, spectators });
+            });
+            
+        }
 
         showGame();
+        showGameModal();
         game_modal_lobby_code.innerText = `Lobby Code: ${peerId}`;
-        
     }
 
     function joinGame() {
-
+        isHost = false;
         const lobby_code = lobby_modal_input.value;
         game_modal_lobby_code.innerText = `Lobby Code: ${lobby_code}`;
 
         let myPlayer = new Player(AppConfig.canvasWidth, AppConfig.canvasHeight, 100, 100, peerId, 0.05);
         myPlayer.name = name;
-
+        
 
         conn = peer.connect(lobby_code);
-        
         console.log("conn: ", conn);
-        // if (conn.open === false) {
-        //     alert('Could not connect to lobby');
-        //     return;
-        // }
+
         
         conn.on('open', () => {
             userInput(myPlayer, conn);
             console.log('Connected to: ', conn.peer);
+            //conn.send({ type: 'playerConnect', myPlayer }); // TODO: need better solution (spectator?)
             conn.send({ type: 'initial_data_request' });
-            conn.send({ type: 'playerConnect', myPlayer });
+
+        });
+
+        conn.on('close', () => {
+            console.log('Connection closed.');
+            conn.send({ type: 'player_disconnected', conn });
+            alert('Connection to host lost');
+            go_to_lobby();
+
         });
 
 
         conn.on('error', (err) => {
             console.log('Connection error: ', err);
-            alert('Could not connect to lobby'); // Notify the user
+            alert('error ' + err); // Notify the user
             go_to_lobby();
         });
 
         showGame();
+        showGameModal();
             // Listen for data from the connection
         conn.on('data', function(data) {
 
-            if (data.type === 'game_input_change') {
-                game_input.value = data.message;
-            }
-            if (data.type === 'team_update') {
-                red_team = data.red_team;
-                blue_team = data.blue_team;
-                spectators = data.spectators;
-                updatePlayerList('Red', red_team);
-                updatePlayerList('Blue', blue_team);
-                updatePlayerList('Spectators', spectators);
-                myPlayer.color = playerColor;
-                conn.send({ type: 'playerConnect', myPlayer });
-            }
             if (data.type === 'initial_data') {
                 red_team = data.red_team;
                 blue_team = data.blue_team;
@@ -899,20 +1029,107 @@ document.addEventListener("DOMContentLoaded", () => {
                 updatePlayerList('Red', red_team);
                 updatePlayerList('Blue', blue_team);
                 updatePlayerList('Spectators', spectators);
+
+                isPaused = data.isPaused;
+                // setup the  start / pause button
+                const startButton = document.getElementById('game_modal_start_button');
+                startButton.innerText = isPaused ? 'Start' : 'Pause';
+                startButton.onclick = function() {
+                    conn.send({ type: 'pause clicked' });
+                }
             }
+
+
+            if (data.type === 'team_update') {
+                red_team = data.red_team;
+                blue_team = data.blue_team;
+                spectators = data.spectators;
+                updatePlayerList('Red', red_team);
+                updatePlayerList('Blue', blue_team);
+                updatePlayerList('Spectators', spectators);
+            }
+            
             if (data.type === 'gameState') {
                 renderGame(ctx, data.players, data.enemies, data.coins, data.missile, data.paused);
+                if (data.paused) {
+                    showGameModal();
+                } 
+            }
+            if (data.type === 'gameStarted!') {
+                showGame();
             }
             if (data.type === 'gameOver') {
-                console.log('Game over: ', data.players);
+                
+                myPlayer = data.players[peerId];
                 // Handle game over event
+                showGameEndModal(myPlayer, data.players);
+                const readyButton = document.getElementById('ready_up_button');
+                readyButton.onclick = function() {
+                    document.getElementById(myPlayer.id).innerText = `${myPlayer.name}: ${myPlayer.score}`;
+                    myPlayer.ready = !myPlayer.ready;
+                    if (myPlayer.ready) {
+                        document.getElementById(myPlayer.id).innerText += ' - Ready';
+                    }
+                    conn.send({ type: 'playerReady', player: myPlayer });
+                    // let everyPlayerReady = Object.values(gameInstance.players).every(player => player.ready);
+                    // if (everyPlayerReady) {
+                    //     conn.send({ type: 'restartGame' });
+                    // }
+                }
+            }
+            if (data.type === 'gameRestarting') {
+                showGame();
+            }
+            if (data.type === 'playerReady') {
+                // update the UI
+                document.getElementById(data.player.id).innerText = `${data.player.name}: ${data.player.score}`;
+                if (data.player.ready) {
+                    document.getElementById(data.player.id).innerText += ' - Ready';
+                }
             }
         });
 
-        // Send game input changes
-        // game_input.addEventListener('input', function() {
-        //     conn.send({ type: 'game_input_change', message: game_input.value });
-        // });
+        document.querySelectorAll('.game_modal_join_button').forEach(button => {
+            button.onclick = function() {
+                const team = this.classList.contains('red') ? 'Red Team' :
+                            this.classList.contains('blue') ? 'Blue Team' : 'Spectators';
+                joinTeamClient(team);
+            }
+        });
+    
+        // Function to handle joining a team
+        function joinTeamClient(team) {
+            console.log('Joining', team);
+            // remove from existing team
+            red_team = red_team.filter(player => player.peerId !== peerId);
+            blue_team = blue_team.filter(player => player.peerId !== peerId);
+            spectators = spectators.filter(player => player.peerId !== peerId);
+            if (team === 'Red Team') {
+                red_team.push({ name, peerId });
+                myPlayer.color = 'red';
+                conn.send({ type: 'set_gameInstance_player', player: myPlayer });
+                sendUserInputs = true;
+            } else if (team === 'Blue Team') {
+                blue_team.push({ name, peerId });
+                myPlayer.color = 'blue';
+                conn.send({ type: 'set_gameInstance_player', player: myPlayer });
+                sendUserInputs = true;
+            } else {
+                spectators.push({ name, peerId });
+                myPlayer.color = 'grey';
+                conn.send({ type: 'remove_gameInstance_player', player: myPlayer });
+                sendUserInputs = false;
+            }
+
+            
+            updatePlayerList('Red', red_team);
+            updatePlayerList('Blue', blue_team);
+            updatePlayerList('spectators', spectators);
+            
+            // tell the server to update team lists
+            conn.send({ type: 'team_update', red_team, blue_team, spectators });
+        }
+
     }
 
     
@@ -920,16 +1137,79 @@ document.addEventListener("DOMContentLoaded", () => {
     const game = document.getElementById('game');
 
     function showGame() {
+        // Show ONLY the game
         lobby_modal.style.display = "none";
         lobby.style.display = "none";
         game.style.display = "grid";
-        showGameModal();
+        const gameModal = document.getElementById('game_modal');
+        gameModal.style.display = 'none';
+        const gameEndModal = document.getElementById('game_end_modal');
+        gameEndModal.style.display = 'none';
+        //showGameModal();
     }
 
     function showGameModal() {
         const gameModal = document.getElementById('game_modal');
         gameModal.style.display = 'flex';
+        const gameEndModal = document.getElementById('game_end_modal');
+        gameEndModal.style.display = 'none';
+        
     }
+
+    function showGameEndModal(myPlayer, allPlayers) {
+        // Determine myPlayer's outcome by comparing scores
+        let winCount = 0;
+        let loseCount = 0;
+        let tieCount = 0;
+
+        
+        // Sort players by score in descending order
+        const sortedPlayers = Object.values(allPlayers).sort((a, b) => b.score - a.score);
+
+        Object.values(allPlayers).forEach(player => {
+            if (player.id !== myPlayer.id) { // Ensure not to compare myPlayer to themselves
+                if (myPlayer.score > player.score) {
+                    winCount++;
+                } else if (myPlayer.score < player.score) {
+                    loseCount++;
+                } else {
+                    tieCount++;
+                }
+            }
+        });
+
+        let result = '';
+        // Determine the status based on comparison
+        if (loseCount === 0 && tieCount === 0) {
+            result = "Victory!";
+        } else if (winCount > 0 && loseCount === 0) {
+            result = "Victory!"; // Win with ties
+        } else if (winCount === 0 && tieCount > 0 && loseCount === 0) {
+            result = "Tie!";
+        } else {
+            result = "Defeat!";
+        }
+        const gameModal = document.getElementById('game_modal');
+        gameModal.style.display = 'none';
+
+        const gameEndModal = document.getElementById('game_end_modal');
+        
+        const statusElement = document.getElementById('game_end_status');
+        statusElement.innerText = result;
+        const all_players_scores = document.getElementById('all_players_scores');
+
+        // Clear previous list and populate with sorted scores
+        all_players_scores.innerHTML = '';
+        sortedPlayers.forEach(player => {
+            const playerScoreElement = document.createElement('p');
+            playerScoreElement.textContent = `${player.name}: ${player.score}`;
+            playerScoreElement.id = player.id; // Add an id so we can later display Ready Status
+            all_players_scores.appendChild(playerScoreElement);
+        });
+
+        gameEndModal.style.display = 'flex';
+    }
+
     
     // Function to hide the game modal
     function hideGameModal() {
@@ -938,44 +1218,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Event listeners for the team join buttons
-    document.querySelectorAll('.game_modal_join_button').forEach(button => {
-        button.addEventListener('click', function() {
-            const team = this.classList.contains('red') ? 'Red Team' :
-                        this.classList.contains('blue') ? 'Blue Team' : 'Spectators';
-            joinTeam(team);
-        });
-    });
-
-    // Function to handle joining a team
-    function joinTeam(team) {
-        console.log('Joining', team);
-        // remove from existing team
-        red_team = red_team.filter(player => player.peerId !== peerId);
-        blue_team = blue_team.filter(player => player.peerId !== peerId);
-        spectators = spectators.filter(player => player.peerId !== peerId);
-        if (team === 'Red Team') {
-            red_team.push({ name, peerId });
-            playerColor = 'red';
-        } else if (team === 'Blue Team') {
-            blue_team.push({ name, peerId });
-            playerColor = 'blue';
-        } else {
-            spectators.push({ name, peerId });
-            playerColor = '';
-        }
-
-        if (conn) {
-            conn.send({ type: 'team_update', red_team, blue_team, spectators });
-        }  
-
-        updatePlayerList('Red', red_team);
-        updatePlayerList('Blue', blue_team);
-        updatePlayerList('spectators', spectators);
-        
-        // Here you would add the logic to join the team
-        // This would involve sending a message to the server with the peer ID and team choice
-        // Then, the server would broadcast the updated team lists to all clients
-    }
+    
 
     // Function to update the player list in the modal
     function updatePlayerList(team, players) {

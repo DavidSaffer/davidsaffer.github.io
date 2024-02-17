@@ -161,6 +161,31 @@
     opacity: 0.8;
 }
 
+/* Start button container */
+.game_modal_start_button_container {
+    margin-top: 20px; /* Space above the start button */
+    text-align: center; /* Center-align the button */
+}
+
+/* Start button styling */
+.start-button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    color: white; /* Text color */
+    background-color: #2ecc71; /* Green background */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s; /* Smooth background color transition on hover */
+}
+
+.start-button:hover {
+    background-color: #27ae60; /* Slightly darker green on hover */
+}
+
+
+/* END GAME SETTINGS MODAL ============================================== */
+
 /* Style for player list columns */
 .player_list {
     border: 1px solid #ccc; /* Border for the player list */
@@ -188,4 +213,59 @@
 
 #game .settings-button:hover {
     background-color: #2980b9; /* Darken button on hover */
+}
+
+/* Style for the game end screen modal */
+
+/* Game End Modal Styles */
+#game_end_modal .game_modal_content {
+    background-color: #2c3e50; /* Dark blue background */
+    color: white; /* Text color */
+    padding: 20px;
+    border-radius: 8px;
+    width: 60%; /* Increase width */
+    max-width: 600px; /* Increase maximum width */
+    min-height: 300px; /* Set a minimum height */
+    text-align: center; /* Center text */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center children horizontally */
+    overflow: hidden; /* Hide overflow */
+    font-size: 1.2rem; /* Increase text size */
+}
+
+#game_end_modal h2 {
+    margin-bottom: 20px; /* Space below the status */
+    font-size: 1.5rem; /* Increase title text size */
+}
+
+#game_end_modal #all_players_scores {
+    text-align: left; /* Center text for player score list */
+    width: 100%; /* Take full width of the modal content */
+    max-height: 300px; /* Increase max-height for larger content area */
+    overflow-y: auto; /* Enable vertical scroll if content overflows */
+    margin-bottom: 20px; /* Space above the button */
+    background-color: #34495e; /* Slightly darker background for contrast */
+    padding: 10px;
+    border-radius: 4px;
+}
+
+#game_end_modal #all_players_scores p {
+    margin: 5px 0; /* Margin for each player score entry */
+    font-size: 1.1rem; /* Increase font size for player scores */
+}
+
+#game_end_modal #ready_up_button {
+    padding: 12px 24px; /* Slightly increase padding */
+    background-color: #3498db; /* Blue button */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.2rem; /* Increase button text size */
+    margin-top: 10px; /* Ensure some space above the button */
+}
+
+#game_end_modal #ready_up_button:hover {
+    background-color: #2980b9; /* Darker blue on hover */
 }
