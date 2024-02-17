@@ -953,7 +953,7 @@ document.addEventListener("DOMContentLoaded", () => {
             spectators = spectators.filter(player => player.peerId !== peerId);
             if (team === 'Red Team') {
                 red_team.push({ name, peerId });
-                myPlayer.color = 'red';
+                myPlayer.color = 'green';
                 gameInstance.players[peerId] = myPlayer;
             } else if (team === 'Blue Team') {
                 blue_team.push({ name, peerId });
@@ -1106,7 +1106,7 @@ document.addEventListener("DOMContentLoaded", () => {
             spectators = spectators.filter(player => player.peerId !== peerId);
             if (team === 'Red Team') {
                 red_team.push({ name, peerId });
-                myPlayer.color = 'red';
+                myPlayer.color = 'green';
                 conn.send({ type: 'set_gameInstance_player', player: myPlayer });
                 sendUserInputs = true;
             } else if (team === 'Blue Team') {
