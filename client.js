@@ -811,26 +811,36 @@ document.addEventListener("DOMContentLoaded", () => {
                     gameInstance.gameTick();
                     // Check if the game ended
                     if (gameInstance.gameOver) {
-                        showGameEndModal(myPlayer, gameInstance.players);
-                        gameWorker.postMessage({ command: 'stop' });
-                        const readyButton = document.getElementById('ready_up_button');
-                        readyButton.onclick = function() {
-                            document.getElementById(myPlayer.id).innerText = `${myPlayer.name}: ${myPlayer.score}`;
-                            myPlayer.ready = !myPlayer.ready;
-                            if (myPlayer.ready) {
-                                document.getElementById(myPlayer.id).innerText += ' - Ready';
-                            }
+                        // if 0 players in gameInstance.players
+                        if (Object.keys(gameInstance.players).length === 0) {
+                            showGameModal();
                             for (const con of gameInstance.connections) {
-                                con.send({ type: 'playerReady', player: myPlayer });
-                            }
-                            
-                            let everyPlayerReady = Object.values(gameInstance.players).every(player => player.ready);
-                            if (everyPlayerReady) {
-                                gameInstance.restart();
-                                gameWorker.postMessage({ command: 'start', fps: 60 });
-                                showGame();
+                                con.send({ type: 'showGameModal'});
                             }
                         }
+                        else {
+                            showGameEndModal(myPlayer, gameInstance.players);
+                            gameWorker.postMessage({ command: 'stop' });
+                            const readyButton = document.getElementById('ready_up_button');
+                            readyButton.onclick = function() {
+                                document.getElementById(myPlayer.id).innerText = `${myPlayer.name}: ${myPlayer.score}`;
+                                myPlayer.ready = !myPlayer.ready;
+                                if (myPlayer.ready) {
+                                    document.getElementById(myPlayer.id).innerText += ' - Ready';
+                                }
+                                for (const con of gameInstance.connections) {
+                                    con.send({ type: 'playerReady', player: myPlayer });
+                                }
+                                
+                                let everyPlayerReady = Object.values(gameInstance.players).every(player => player.ready);
+                                if (everyPlayerReady) {
+                                    gameInstance.restart();
+                                    gameWorker.postMessage({ command: 'start', fps: 60 });
+                                    showGame();
+                                }
+                            }
+                        }
+                        
                     }
                 }
             };
@@ -1082,10 +1092,17 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (data.type === 'playerReady') {
                 // update the UI
-                document.getElementById(data.player.id).innerText = `${data.player.name}: ${data.player.score}`;
+                const playerUI = document.getElementById(data.player.id);
+                if (playerUI === null) {
+                    return;
+                }
+                playerUI.innerText = `${data.player.name}: ${data.player.score}`;
                 if (data.player.ready) {
                     document.getElementById(data.player.id).innerText += ' - Ready';
                 }
+            }
+            if (data.type === 'showGameModal') {
+                showGameModal();
             }
         });
 
