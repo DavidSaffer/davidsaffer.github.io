@@ -319,7 +319,8 @@ class Game {
         this.coins = [];
         this.paused = false;
         this.gameOver = false;
-        this.lastEnemySpawn = Date.now();
+        this.lastEnemySpawn = Date.now(); 
+        this.lastEnemySpawn += 2000; // add two secconds?. spawn protection
         this.lastCoinSpawn = Date.now();
         this.start();
 
