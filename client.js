@@ -593,7 +593,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const go_button = document.getElementById('go_button');
 
     go_button.onclick = function() {
-        name = name_input.value;
+        // limmit name to 20 characters and remove any '>' or '<' characters
+        // Get the value from the input
+        let inputName = name_input.value;
+        
+        // Limit name to 20 characters
+        inputName = inputName.substring(0, 19);
+        
+        // Remove '>' and '<' characters
+        inputName = inputName.replace(/[<>]/g, '');
+        name = inputName;
         go_to_lobby();
     }
 
