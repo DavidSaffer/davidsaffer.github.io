@@ -335,11 +335,11 @@ class Game {
     }
 
     updatePlayer(player){
-        if (player.lives <= 0) {
-            player.dx = 0;
-            player.dy = 0;
-            return;
-        }
+        // if (player.lives <= 0) {
+        //     player.dx = 0;
+        //     player.dy = 0;
+        //     return;
+        // }
 
         player.dx = 0;
         player.dy = 0;
