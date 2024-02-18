@@ -9,7 +9,7 @@ const GameConfig = {
     enemySpeed: 25,
     coinSpawnRate: 75, // Spawn a coin every 0.5 seconds
     coinLifespan: 5000, // 5 seconds
-    playerLives: 10,
+    playerLives: 1,
     playerSpeed: 15
 
 
@@ -45,7 +45,7 @@ class Player {
         this.width = size * basePlayerScale; // Example: 5% of canvas width
         this.height = size * basePlayerScale; // Same for height, adjust percentage as needed
 
-        this.ready = false;
+        this.ready = true;
 
         // Missile shooting cooldown
         this.missileCooldown = 100; // 500 ms cooldown
