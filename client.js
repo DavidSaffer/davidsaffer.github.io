@@ -50,6 +50,8 @@ class Player {
         // Missile shooting cooldown
         this.missileCooldown = 100; // 500 ms cooldown
         this.lastMissileShot = 0; // Timestamp of the last shot
+
+        this.hasJoinedTeam = false;
     }
 
     loseLife() {
@@ -478,12 +480,12 @@ class Game {
         let gameShouldEnd = false;
         if (alivePlayers.length === 0) {
             gameShouldEnd = true; // All players are dead, end the game
-        } else if (numPlayers === 1) {
-            gameShouldEnd = false; // sing player game
+        } else if (numPlayers === 1){
+            gameShouldEnd = false; // single player game
         } else if (alivePlayers.length === 1 && deadPlayers.every(deadPlayer => alivePlayers[0].score > deadPlayer.score)) {
             // Only one player is alive and has a higher score than all dead players, end the game
             gameShouldEnd = true;
-        }
+        } 
 
         if (gameShouldEnd) {
             this.gameOver = true;
@@ -877,6 +879,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     conn.send({ type: 'initial_data', red_team: red_team, blue_team: blue_team, spectators: spectators, isPaused: gameInstance.paused});
                 }
                 if (data.type === 'pause clicked') {
+                    if (Object.keys(gameInstance.players).length === 0) {
+                        conn.send({ type: 'start game with 0 players'});
+                        return;
+                    }
                     // Locally update the pause/start button state
                     const startButton = document.getElementById('game_modal_start_button');
                     // Update the game instance
@@ -942,6 +948,10 @@ document.addEventListener("DOMContentLoaded", () => {
         // Handle when host clicks start / pause button
         const startButton = document.getElementById('game_modal_start_button');
         startButton.onclick = function() {  
+            if (Object.keys(gameInstance.players).length === 0) {
+                alert('You need at least one player to start the game');
+                return;
+            }
             gameInstance.paused = !gameInstance.paused;
             startButton.innerText = gameInstance.paused ? 'Start' : 'Pause';
             if (gameInstance.paused) {
@@ -966,6 +976,12 @@ document.addEventListener("DOMContentLoaded", () => {
     
         // Function to handle joining a team
         function joinTeam(team) {
+            if (!myPlayer){
+                console.log("server error: myPlayer not defined inside joinTeam function");
+            }
+            if (myPlayer.hasJoinedTeam) {
+                return;
+            }
             console.log('Joining', team);
             // remove from existing team
             red_team = red_team.filter(player => player.peerId !== peerId);
@@ -993,7 +1009,7 @@ document.addEventListener("DOMContentLoaded", () => {
             Object.values(connectedClients).forEach(conn => {
                 conn.send({ type: 'team_update', red_team, blue_team, spectators });
             });
-            
+            myPlayer.hasJoinedTeam = true;
         }
 
         showGame();
@@ -1020,15 +1036,18 @@ document.addEventListener("DOMContentLoaded", () => {
             //conn.send({ type: 'playerConnect', myPlayer }); // TODO: need better solution (spectator?)
             conn.send({ type: 'initial_data_request' });
 
+
+            conn.on('close', () => {
+                console.log('Connection closed.');
+                conn.send({ type: 'player_disconnected', conn });
+                alert('Connection to host lost');
+                go_to_lobby();
+    
+            });
+            
         });
 
-        conn.on('close', () => {
-            console.log('Connection closed.');
-            conn.send({ type: 'player_disconnected', conn });
-            alert('Connection to host lost');
-            go_to_lobby();
-
-        });
+        
 
 
         conn.on('error', (err) => {
@@ -1059,6 +1078,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
 
+            if (data.type === 'start game with 0 players') {
+                alert('You need at least one player to start the game');
+            }
+
 
             if (data.type === 'team_update') {
                 red_team = data.red_team;
@@ -1080,22 +1103,32 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (data.type === 'gameOver') {
                 
-                myPlayer = data.players[peerId];
-                // Handle game over event
-                showGameEndModal(myPlayer, data.players);
-                const readyButton = document.getElementById('ready_up_button');
-                readyButton.onclick = function() {
-                    document.getElementById(myPlayer.id).innerText = `${myPlayer.name}: ${myPlayer.score}`;
-                    myPlayer.ready = !myPlayer.ready;
-                    if (myPlayer.ready) {
-                        document.getElementById(myPlayer.id).innerText += ' - Ready';
-                    }
-                    conn.send({ type: 'playerReady', player: myPlayer });
-                    // let everyPlayerReady = Object.values(gameInstance.players).every(player => player.ready);
-                    // if (everyPlayerReady) {
-                    //     conn.send({ type: 'restartGame' });
-                    // }
+                let isPlaying = false;
+                if (data.players[peerId]){
+                    myPlayer = data.players[peerId];
+                    isPlaying = true;
                 }
+                // if (data.spectators[peerId]) {
+                //     myPlayer = data.spectators[peerId];
+                // }
+                // Handle game over event
+                if (isPlaying) {
+                    const readyButton = document.getElementById('ready_up_button');
+                    readyButton.onclick = function() {
+                        document.getElementById(myPlayer.id).innerText = `${myPlayer.name}: ${myPlayer.score}`;
+                        myPlayer.ready = !myPlayer.ready;
+                        if (myPlayer.ready) {
+                            document.getElementById(myPlayer.id).innerText += ' - Ready';
+                        }
+                        conn.send({ type: 'playerReady', player: myPlayer });
+                        // let everyPlayerReady = Object.values(gameInstance.players).every(player => player.ready);
+                        // if (everyPlayerReady) {
+                        //     conn.send({ type: 'restartGame' });
+                        // }
+                    }
+                }
+                showGameEndModal(myPlayer, data.players);
+                
             }
             if (data.type === 'gameRestarting') {
                 showGame();
@@ -1126,6 +1159,12 @@ document.addEventListener("DOMContentLoaded", () => {
     
         // Function to handle joining a team
         function joinTeamClient(team) {
+            if (!myPlayer){
+                console.log("client error: myPlayer not defined inside joinTeam function");
+            }
+            if (myPlayer.hasJoinedTeam) {
+                return;
+            }
             console.log('Joining', team);
             // remove from existing team
             red_team = red_team.filter(player => player.peerId !== peerId);
@@ -1133,6 +1172,7 @@ document.addEventListener("DOMContentLoaded", () => {
             spectators = spectators.filter(player => player.peerId !== peerId);
             if (team === 'Red Team') {
                 red_team.push({ name, peerId });
+                console.log(myPlayer);
                 myPlayer.color = 'green';
                 conn.send({ type: 'set_gameInstance_player', player: myPlayer });
                 sendUserInputs = true;
@@ -1145,6 +1185,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 spectators.push({ name, peerId });
                 myPlayer.color = 'grey';
                 conn.send({ type: 'remove_gameInstance_player', player: myPlayer });
+                console.log(myPlayer);
                 sendUserInputs = false;
             }
 
@@ -1155,6 +1196,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             // tell the server to update team lists
             conn.send({ type: 'team_update', red_team, blue_team, spectators });
+            myPlayer.hasJoinedTeam = true;
         }
 
     }
@@ -1184,6 +1226,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function showGameEndModal(myPlayer, allPlayers) {
+
         // Determine myPlayer's outcome by comparing scores
         let winCount = 0;
         let loseCount = 0;
@@ -1194,7 +1237,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const sortedPlayers = Object.values(allPlayers).sort((a, b) => b.score - a.score);
 
         Object.values(allPlayers).forEach(player => {
-            if (player.id !== myPlayer.id) { // Ensure not to compare myPlayer to themselves
+            if (myPlayer && player.id !== myPlayer.id) { // Ensure not to compare myPlayer to themselves
                 if (myPlayer.score > player.score) {
                     winCount++;
                 } else if (myPlayer.score < player.score) {
