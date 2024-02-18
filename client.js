@@ -5,11 +5,11 @@ const AppConfig = {
 };
 
 const GameConfig = {
-    enemySpawnRate: 150, // Spawn an enemy every second
-    enemySpeed: 18,
-    coinSpawnRate: 50, // Spawn a coin every 0.5 seconds
+    enemySpawnRate: 100, // Spawn an enemy every second
+    enemySpeed: 25,
+    coinSpawnRate: 75, // Spawn a coin every 0.5 seconds
     coinLifespan: 5000, // 5 seconds
-    playerLives: 15,
+    playerLives: 10,
     playerSpeed: 15
 
 
