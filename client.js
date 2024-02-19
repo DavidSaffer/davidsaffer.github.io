@@ -261,16 +261,23 @@ class Game {
         this.colors = ['blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'brown', 'black', 'white'];
         this.interval = null;
         this.roomName = serverRoomName;
-        this.connections = [];
+        this.connections = {};
         this.conn = null;
         this.ctx = context;
     }
 
+    broadcast(message) {
+        Object.values(this.connections).forEach(conn => {
+            conn.send(message);
+        });
+    }
+
     // Method to start the game loop
     start() {
-        for (const conn of this.connections) {
-            conn.send({ type: 'gameStarted!' });
-        }
+        this.broadcast({ type: 'gameStarted!' })
+        // for (const conn of this.connections) {
+        //     conn.send({ type: 'gameStarted!' });
+        // }
         this.paused = false;
         new Promise((resolve, reject) => {
             // Check periodically if there are 2 players
@@ -298,9 +305,10 @@ class Game {
     }
 
     stop() {
-        for (const conn of this.connections) {
-            conn.send({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
-        }
+        this.broadcast({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
+        // for (const conn of this.connections) {
+        //     conn.send({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
+        // }
         if (this.interval) {
             clearInterval(this.interval);
         }
@@ -460,9 +468,10 @@ class Game {
 
 
     gameTick() {
-        for (const conn of this.connections) {
-            conn.send({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
-        }
+        this.broadcast({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
+        // for (const conn of this.connections) {
+        //     conn.send({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
+        // }
         if (this.paused || this.gameOver) return;
         this.spawnEnemy();
         this.spawnCoin();
@@ -491,9 +500,10 @@ class Game {
             this.gameOver = true;
             console.log("game over");
             
-            for (const conn of this.connections) {
-                conn.send({ type: 'gameOver', players: this.players });
-            }
+            this.broadcast({ type: 'gameOver', players: this.players });
+            // for (const conn of this.connections) {
+            //     conn.send({ type: 'gameOver', players: this.players });
+            // }
             
             //io.to(this.roomName).emit('gameOver', this.players); // Assume roomNumber is tracked per game instance
             this.stop(); // Stop the game loop
@@ -823,16 +833,21 @@ document.addEventListener("DOMContentLoaded", () => {
                     gameInstance.gameTick();
                     // Check if the game ended
                     if (gameInstance.gameOver) {
+                        // set each player to be not ready
+                        gameWorker.postMessage({ command: 'stop' });
+                        for (const player of Object.values(gameInstance.players)) {
+                            player.ready = false;
+                        }
+
                         // if 0 players in gameInstance.players
                         if (Object.keys(gameInstance.players).length === 0) {
                             showGameModal();
-                            for (const con of gameInstance.connections) {
+                            Object.values(gameInstance.connections).forEach(con => {
                                 con.send({ type: 'showGameModal'});
-                            }
+                            });
                         }
                         else {
                             showGameEndModal(myPlayer, gameInstance.players);
-                            gameWorker.postMessage({ command: 'stop' });
                             const readyButton = document.getElementById('ready_up_button');
                             readyButton.onclick = function() {
                                 document.getElementById(myPlayer.id).innerText = `${myPlayer.name}: ${myPlayer.score}`;
@@ -840,9 +855,9 @@ document.addEventListener("DOMContentLoaded", () => {
                                 if (myPlayer.ready) {
                                     document.getElementById(myPlayer.id).innerText += ' - Ready';
                                 }
-                                for (const con of gameInstance.connections) {
+                                Object.values(gameInstance.connections).forEach(con => {
                                     con.send({ type: 'playerReady', player: myPlayer });
-                                }
+                                });
                                 
                                 let everyPlayerReady = Object.values(gameInstance.players).every(player => player.ready);
                                 if (everyPlayerReady) {
@@ -866,18 +881,36 @@ document.addEventListener("DOMContentLoaded", () => {
             go_to_lobby();
         }
 
+        
+        
+
         let connectedClients = {};
+
+        function broadcast(message) {
+            Object.values(connectedClients).forEach(client => {
+                client.send(message);
+            }); 
+
+            // for (let id in connectedClients) {
+            //     if (connectedClients.hasOwnProperty(id)) {
+            //         connectedClients[id].send(message);
+            //     }
+            // }
+        }
         // When someone connects to this host
         peer.on('connection', function(connection) {
             console.log("connected ");
             conn = connection;
-            gameInstance.connections.push(conn);
-            connectedClients[connection.id] = connection;
+            gameInstance.connections[connection.peer] = connection;
+            connectedClients[connection.peer] = connection;
+            console.log('connectedClients', connectedClients);
             // Listen for data from the clients
             conn.on('data', function(data) {
                 if (data.type === 'initial_data_request') {
                     conn.send({ type: 'initial_data', red_team: red_team, blue_team: blue_team, spectators: spectators, isPaused: gameInstance.paused});
                 }
+
+
                 if (data.type === 'pause clicked') {
                     if (Object.keys(gameInstance.players).length === 0) {
                         conn.send({ type: 'start game with 0 players'});
@@ -900,7 +933,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         showGame();
                     }
                     // Tell everybody else about pause state
-                    conn.send({ type: 'gameState', players: gameInstance.players, enemies: gameInstance.enemies, coins: gameInstance.coins, missile: gameInstance.missile, paused: gameInstance.paused });
+                    broadcast({ type: 'gameState', players: gameInstance.players, enemies: gameInstance.enemies, coins: gameInstance.coins, missile: gameInstance.missile, paused: gameInstance.paused });
+
                 }
                 if (data.type === 'team_update') {
                     red_team = data.red_team;
@@ -909,6 +943,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     updatePlayerList('Red', red_team);
                     updatePlayerList('Blue', blue_team);
                     updatePlayerList('Spectators', spectators);
+                    broadcast({ type: 'team_update', red_team, blue_team, spectators });
                 }
                 
                 if (data.type === 'set_gameInstance_player') {
@@ -926,16 +961,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     gameInstance.players[data.id].action = data.commands.action;
                 }
                 if (data.type === 'playerReady') {
-                    gameInstance.players[data.player.id].ready = data.player.ready;
+                    gameInstance.players[data.player.id].ready = !gameInstance.players[data.player.id].ready;
+                    broadcast({ type: 'playerReady', player: gameInstance.players[data.player.id] })
                     //update the UI
                     document.getElementById(data.player.id).innerText = `${data.player.name}: ${data.player.score}`;
-                    if (data.player.ready) {
+                    if (gameInstance.players[data.player.id].ready) {
                         document.getElementById(data.player.id).innerText += ' - Ready';
                     }
 
                     let allPlayersReady = Object.values(gameInstance.players).every(player => player.ready);
                     if (allPlayersReady) {
-                        conn.send({ type: 'gameRestarting' });
+                        broadcast({ type: 'gameRestarting' });
                         gameInstance.restart();
                         gameWorker.postMessage({ command: 'start', fps: 60 });
                         showGame();
@@ -1006,9 +1042,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updatePlayerList('Blue', blue_team);
             updatePlayerList('spectators', spectators);
             // Send the updated team lists to the clients
-            Object.values(connectedClients).forEach(conn => {
-                conn.send({ type: 'team_update', red_team, blue_team, spectators });
-            });
+            broadcast({ type: 'team_update', red_team, blue_team, spectators });
             myPlayer.hasJoinedTeam = true;
         }
 
@@ -1039,7 +1073,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             conn.on('close', () => {
                 console.log('Connection closed.');
-                conn.send({ type: 'player_disconnected', conn });
+                //conn.send({ type: 'player_disconnected', conn });
                 alert('Connection to host lost');
                 go_to_lobby();
     
@@ -1115,11 +1149,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (isPlaying) {
                     const readyButton = document.getElementById('ready_up_button');
                     readyButton.onclick = function() {
-                        document.getElementById(myPlayer.id).innerText = `${myPlayer.name}: ${myPlayer.score}`;
-                        myPlayer.ready = !myPlayer.ready;
-                        if (myPlayer.ready) {
-                            document.getElementById(myPlayer.id).innerText += ' - Ready';
-                        }
+                        //document.getElementById(myPlayer.id).innerText = `${myPlayer.name}: ${myPlayer.score}`;
+                        //myPlayer.ready = !myPlayer.ready;
+                        // if (myPlayer.ready) {
+                        //     document.getElementById(myPlayer.id).innerText += ' - Ready';
+                        // }
                         conn.send({ type: 'playerReady', player: myPlayer });
                         // let everyPlayerReady = Object.values(gameInstance.players).every(player => player.ready);
                         // if (everyPlayerReady) {
@@ -1137,6 +1171,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 // update the UI
                 const playerUI = document.getElementById(data.player.id);
                 if (playerUI === null) {
+                    console.log('playerUI is null for' + data.player.id);
                     return;
                 }
                 playerUI.innerText = `${data.player.name}: ${data.player.score}`;
@@ -1165,14 +1200,12 @@ document.addEventListener("DOMContentLoaded", () => {
             if (myPlayer.hasJoinedTeam) {
                 return;
             }
-            console.log('Joining', team);
             // remove from existing team
             red_team = red_team.filter(player => player.peerId !== peerId);
             blue_team = blue_team.filter(player => player.peerId !== peerId);
             spectators = spectators.filter(player => player.peerId !== peerId);
             if (team === 'Red Team') {
                 red_team.push({ name, peerId });
-                console.log(myPlayer);
                 myPlayer.color = 'green';
                 conn.send({ type: 'set_gameInstance_player', player: myPlayer });
                 sendUserInputs = true;
@@ -1185,7 +1218,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 spectators.push({ name, peerId });
                 myPlayer.color = 'grey';
                 conn.send({ type: 'remove_gameInstance_player', player: myPlayer });
-                console.log(myPlayer);
                 sendUserInputs = false;
             }
 
