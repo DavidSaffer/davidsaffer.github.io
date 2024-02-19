@@ -1,20 +1,41 @@
+/**
+ * Configuration settings for the application's canvas.
+ * @type {Object}
+ */
 const AppConfig = {
     canvasWidth: 16 * 100,
     canvasHeight: 9 * 100
     // Add more configuration settings as needed
 };
 
+/**
+ * Configuration settings for game mechanics.
+ * @type {Object}
+ */
 const GameConfig = {
     enemySpawnRate: 100, // Spawn an enemy every second
     enemySpeed: 25,
     coinSpawnRate: 75, // Spawn a coin every 0.5 seconds
     coinLifespan: 5000, // 5 seconds
     playerLives: 1,
-    playerSpeed: 15
+    playerSpeed: 15,
 
+    spawnProtectionDurration: 1 * 1000, // 1 second
+    allowGhosts: true // if true, players can still move after they die
 
 };
 
+/**
+ * Represents a player in the game.
+ * @class
+ * 
+ * @param {number} cWidth - The width of the canvas.
+ * @param {number} cHeight - The height of the canvas.
+ * @param {number} x - The starting x-coordinate of the player.
+ * @param {number} y - The starting y-coordinate of the player.
+ * @param {string} id - The unique identifier for the player.
+ * @param {number} [basePlayerScale=0.05] - The base scale for the player's size.
+ */
 class Player {
     constructor(cWidth, cHeight, x, y, id, basePlayerScale = 0.05 ) {
         this.cWidth = cWidth;
@@ -116,6 +137,15 @@ class Player {
     }
 }
 
+/**
+ * Represents an enemy in the game.
+ * @class
+ * 
+ * @param {number} cWidth - The width of the canvas.
+ * @param {number} cHeight - The height of the canvas.
+ * @param {number} speed - The speed of the enemy.
+ * @param {number} [enemieScale=0.03] - The scale for the enemy's size.
+ */
 class Enemy {
     constructor(cWidth, cHeight, speed, enemieScale = .03) {
         this.enemieScale = enemieScale;
@@ -162,6 +192,14 @@ class Enemy {
     }
 }
 
+/**
+ * Represents a coin in the game.
+ * @class
+ * 
+ * @param {number} cWidth - The width of the canvas.
+ * @param {number} cHeight - The height of the canvas.
+ * @param {number} [coinScale=0.015] - The scale for the coin's size.
+ */
 class Coin {
     constructor(cWidth, cHeight, coinScale = .015) {
         this.coinScale = coinScale;
@@ -214,6 +252,15 @@ class Coin {
     }
 }
 
+/**
+ * Represents a missile shot by a player.
+ * @class
+ * 
+ * @param {number} x - The starting x-coordinate of the missile.
+ * @param {number} y - The starting y-coordinate of the missile.
+ * @param {string} direction - The direction of the missile ('up', 'down', 'left', 'right').
+ * @param {string} ownerId - The ID of the player who shot the missile.
+ */
 class Missile {
     constructor(x, y, direction, ownerId) {
         this.x = x;
@@ -242,6 +289,16 @@ class Missile {
     }
 }
 
+/**
+ * Represents the game state and logic.
+ * @class
+ * 
+ * @param {number} cWidth - The width of the canvas.
+ * @param {number} cHeight - The height of the canvas.
+ * @param {string} serverRoomName - The name of the server room.
+ * @param {Object} gameConfig - Configuration settings for the game.
+ * @param {CanvasRenderingContext2D} context - The canvas context for rendering.
+ */
 class Game {
     constructor(cWidth, cHeight, serverRoomName, gameConfig, context) {
         this.cWidth = cWidth;
@@ -266,13 +323,22 @@ class Game {
         this.ctx = context;
     }
 
+    /**
+     * Broadcasts a message to all connected clients except the sender.
+     * Assumes `connections` is a collection of client connections.
+     * 
+     * @param {Object|string} message - The message to broadcast.
+     */
     broadcast(message) {
         Object.values(this.connections).forEach(conn => {
             conn.send(message);
         });
     }
 
-    // Method to start the game loop
+    /**
+     * Broadcasts a message to all connected clients (not including the sender).
+     * Starts the rendering of the Hosts's game.
+     */
     start() {
         this.broadcast({ type: 'gameStarted!' })
         // for (const conn of this.connections) {
@@ -304,6 +370,10 @@ class Game {
         });
     }
 
+    /**
+     * broadcast to all connected clients the current game state (players, enemies, coins, missile, paused).
+     * stops the local rendering of the game.
+     */
     stop() {
         this.broadcast({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
         // for (const conn of this.connections) {
@@ -314,7 +384,11 @@ class Game {
         }
     }
 
-
+    /**
+     * For each player, reset their lives, score, and set ready status to false
+     * Clears enemies, coins
+     * sets paused and gameOver to false
+     */
     restart() {
         // reset players
         Object.values(this.players).forEach(player => {
@@ -330,26 +404,33 @@ class Game {
         this.paused = false;
         this.gameOver = false;
         this.lastEnemySpawn = Date.now(); 
-        this.lastEnemySpawn += 2000; // add two secconds?. spawn protection
+        this.lastEnemySpawn += GameConfig.spawnProtectionDurration; // add two secconds?. spawn protection
         this.lastCoinSpawn = Date.now();
+        this.lastCoinSpawn += GameConfig.spawnProtectionDurration; // add two secconds?. spawn protection
         this.start();
 
     }
 
-    addPlayer(id, x, y, playerNumber, playerName, basePlayerScale = 0.05) {
-        const player = new Player(this.cWidth, this.cHeight, x, y, id, basePlayerScale);
-        player.playerNumber = playerNumber;
-        player.name = playerName;
-        player.color = this.colors[playerNumber - 1];
-        this.players[id] = player;
-    }
+    // never used
+
+    // addPlayer(id, x, y, playerNumber, playerName, basePlayerScale = 0.05) {
+    //     const player = new Player(this.cWidth, this.cHeight, x, y, id, basePlayerScale);
+    //     player.playerNumber = playerNumber;
+    //     player.name = playerName;
+    //     player.color = this.colors[playerNumber - 1];
+    //     this.players[id] = player;
+    // }
 
     updatePlayer(player){
-        // if (player.lives <= 0) {
-        //     player.dx = 0;
-        //     player.dy = 0;
-        //     return;
-        // }
+
+        if (!GameConfig.allowGhosts) {
+            if (player.lives <= 0) {
+                player.dx = 0;
+                player.dy = 0;
+                return;
+            }
+        }
+        
 
         player.dx = 0;
         player.dy = 0;
@@ -535,6 +616,17 @@ class Game {
     }
 }
 
+/**
+ * Renders the game state to the canvas. Draws players, enemies, coins,
+ * and other game elements based on the current state.
+ * 
+ * @param {CanvasRenderingContext2D} ctx - The canvas context to draw on.
+ * @param {Object[]} players - An array of player objects.
+ * @param {Object[]} enemies - An array of enemy objects.
+ * @param {Object[]} coins - An array of coin objects.
+ * @param {Object[]} missile - An array of missile objects.
+ * @param {boolean} paused - Indicates if the game is currently paused.
+ */
 function renderGame(ctx, players, enemies, coins, missile, paused) {
     //if no players, continue
     if (Object.keys(players).length === 0) {
@@ -807,6 +899,10 @@ document.addEventListener("DOMContentLoaded", () => {
         conn.send({ type: 'userInput', id: peerId, commands: userCommands });
     }
 
+
+    /**
+     * Starts a game instance and setups up this user as the game host
+     */
     function startGame() {
         console.log('Starting game');
         isHost = true;
@@ -886,17 +982,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let connectedClients = {};
 
+        
         function broadcast(message) {
             Object.values(connectedClients).forEach(client => {
                 client.send(message);
             }); 
-
-            // for (let id in connectedClients) {
-            //     if (connectedClients.hasOwnProperty(id)) {
-            //         connectedClients[id].send(message);
-            //     }
-            // }
         }
+
         // When someone connects to this host
         peer.on('connection', function(connection) {
             console.log("connected ");
@@ -990,7 +1082,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (gameInstance.spectators[conn.peer]) {
                     delete gameInstance.spectators[conn.peer];
                 }
-
+                broadcast({ type: 'player left', player: { id: conn.peer } });
+                // remove player from the UI
+                const playerUI = document.getElementById(data.player.id);
+                if (playerUI) {
+                    playerUI.remove();
+                }
             });
 
         });
@@ -1065,6 +1162,13 @@ document.addEventListener("DOMContentLoaded", () => {
         game_modal_lobby_code.innerText = `Lobby Code: ${peerId}`;
     }
 
+    /**
+     * Client function. Connects to a host game instance using the provided lobby code.
+     * Some document elements changed to work from a client's perspective.
+     * Event listeners and data handlers handled here.
+     * 
+     * @param {string} lobby_code - The unique identifier for the lobby to join.
+     */
     function joinGame() {
         isHost = false;
         const lobby_code = lobby_modal_input.value;
@@ -1083,15 +1187,6 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log('Connected to: ', conn.peer);
             //conn.send({ type: 'playerConnect', myPlayer }); // TODO: need better solution (spectator?)
             conn.send({ type: 'initial_data_request' });
-
-
-            conn.on('close', () => {
-                console.log('Connection closed.');
-                //conn.send({ type: 'player_disconnected', conn });
-                alert('Connection to host lost');
-                go_to_lobby();
-    
-            });
             
         });
 
@@ -1196,6 +1291,14 @@ document.addEventListener("DOMContentLoaded", () => {
             if (data.type === 'showGameModal') {
                 showGameModal();
             }
+            if (data.type === 'player left') {
+                // remove player from the UI
+                const playerUI = document.getElementById(data.player.id);
+                if (playerUI) {
+                    playerUI.remove();
+                }
+            }
+
         });
 
         conn.on('close', () => {
