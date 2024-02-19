@@ -17,12 +17,13 @@ const GameConfig = {
     enemySpeed: 25,
     coinSpawnRate: 75, // Spawn a coin every 0.5 seconds
     coinLifespan: 5000, // 5 seconds
-    playerLives: 1,
+    playerLives: 3,
     playerSpeed: 15,
 
     spawnProtectionDurration: 1 * 1000, // 1 second
-    allowGhosts: true // if true, players can still move after they die
+    allowGhosts: true, // if true, players can still move after they die
 
+    playerColors: ['Blue', 'Green', 'Purple', 'Orange', 'Pink', 'Brown', 'Black', 'White']
 };
 
 /**
@@ -883,6 +884,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (conn === undefined) {
             return;
         }
+        if (conn._open === false) {
+            return;
+        }
         if (isHost) {
             return; // Double check
         }
@@ -919,6 +923,25 @@ document.addEventListener("DOMContentLoaded", () => {
         userInput(myPlayer);
         clientPlayer = myPlayer;
         //gameInstance.players[peerId] = myPlayer;
+
+        // Color selection setup
+        const player_color = document.getElementById('player_color');
+        
+        Object.values(GameConfig.playerColors).forEach(color => {
+            const color_option = document.createElement('option');
+            color_option.value = color;
+            color_option.innerText = color;
+            player_color.appendChild(color_option);
+        });
+
+        let selectedColor = player_color.value;
+        // Add an event listener to handle changes
+        player_color.onchange = function() {
+            selectedColor = player_color.value;
+            //myPlayer.color = selectedColor;
+        }
+        
+        
 
         let gameWorker;
         if (window.Worker) {
@@ -999,7 +1022,14 @@ document.addEventListener("DOMContentLoaded", () => {
             // Listen for data from the clients
             conn.on('data', function(data) {
                 if (data.type === 'initial_data_request') {
-                    conn.send({ type: 'initial_data', red_team: red_team, blue_team: blue_team, spectators: spectators, isPaused: gameInstance.paused});
+                    const allColors = [];
+                    // Iterate through each option in the player_color select
+                    for (let i = 0; i < player_color.options.length; i++) {
+                        // Add the value of each option to the allColors array
+                        allColors.push(player_color.options[i].value);
+                    }
+                    console.log('colors: ', allColors);
+                    conn.send({ type: 'initial_data', red_team: red_team, blue_team: blue_team, spectators: spectators, isPaused: gameInstance.paused, availableColors: allColors});
                 }
 
 
@@ -1045,6 +1075,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     delete gameInstance.players[data.player.id];
                 }
 
+                if (data.type === 'client used color') {
+                    // remove this color from the list
+                    player_color.remove(data.index);
+                    console.log('color used', data.color, player_color.values);
+                    broadcast({ type: 'color used', color: data.color, index: data.selectedIndex });
+                }
+
                 if (data.type === 'userInput') {
                     gameInstance.players[data.id].left = data.commands.left;
                     gameInstance.players[data.id].up = data.commands.up;
@@ -1084,7 +1121,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 broadcast({ type: 'player left', player: { id: conn.peer } });
                 // remove player from the UI
-                const playerUI = document.getElementById(data.player.id);
+                const playerUI = document.getElementById(conn.peer);
                 if (playerUI) {
                     playerUI.remove();
                 }
@@ -1134,17 +1171,30 @@ document.addEventListener("DOMContentLoaded", () => {
             red_team = red_team.filter(player => player.peerId !== peerId);
             blue_team = blue_team.filter(player => player.peerId !== peerId);
             spectators = spectators.filter(player => player.peerId !== peerId);
+            
+            // get what is in player_color selector
+            myPlayer.color = selectedColor;
+            // remove this color optoin
+            player_color.remove(player_color.selectedIndex);
+            // Broadcast the change
+            broadcast({ type: 'color used', color: selectedColor, index: player_color.selectedIndex });
+            // Remove the color selector, and show the color label
+            player_color.style.display = 'none';
+            document.getElementById('color_selector_label').style.display = 'none';
+            document.getElementById('selected_color_label').innerText = `Color: ${selectedColor}`;
+
+            console.log('myPlayer.color', myPlayer.color);
             if (team === 'Red Team') {
                 red_team.push({ name, peerId });
-                myPlayer.color = 'green';
+                //myPlayer.color = 'green';
                 gameInstance.players[peerId] = myPlayer;
             } else if (team === 'Blue Team') {
                 blue_team.push({ name, peerId });
-                myPlayer.color = 'blue';
+                //myPlayer.color = 'blue';
                 gameInstance.players[peerId] = myPlayer;
             } else {
                 spectators.push({ name, peerId });
-                myPlayer.color = 'grey';
+                //myPlayer.color = 'grey';
                 delete gameInstance.players[peerId];
             }
 
@@ -1181,6 +1231,9 @@ document.addEventListener("DOMContentLoaded", () => {
         conn = peer.connect(lobby_code);
         console.log("conn: ", conn);
 
+        // Color selection setup
+        const player_color = document.getElementById('player_color');
+
         
         conn.on('open', () => {
             userInput(myPlayer, conn);
@@ -1198,6 +1251,8 @@ document.addEventListener("DOMContentLoaded", () => {
             alert('error ' + err); // Notify the user
             go_to_lobby();
         });
+
+        let selectedColor = player_color.value;
 
         showGame();
         showGameModal();
@@ -1219,6 +1274,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 startButton.onclick = function() {
                     conn.send({ type: 'pause clicked' });
                 }
+
+                Object.values(data.availableColors).forEach(color => {
+                    const color_option = document.createElement('option');
+                    color_option.value = color;
+                    color_option.innerText = color;
+                    player_color.appendChild(color_option);
+                });
+
+                selectedColor = player_color.value;
+                // Add an event listener to handle changes
+                player_color.onchange = function() {
+                    selectedColor = player_color.value;
+                    //myPlayer.color = selectedColor;
+                }
             }
 
             if (data.type === 'start game with 0 players') {
@@ -1233,6 +1302,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 updatePlayerList('Red', red_team);
                 updatePlayerList('Blue', blue_team);
                 updatePlayerList('Spectators', spectators);
+            }
+
+            if (data.type === 'color used') {
+                player_color.remove(data.index);
             }
             
             if (data.type === 'gameState') {
@@ -1326,19 +1399,32 @@ document.addEventListener("DOMContentLoaded", () => {
             red_team = red_team.filter(player => player.peerId !== peerId);
             blue_team = blue_team.filter(player => player.peerId !== peerId);
             spectators = spectators.filter(player => player.peerId !== peerId);
+
+            // get what is in player_color selector
+            myPlayer.color = selectedColor;
+            // remove this color optoin
+            player_color.remove(player_color.selectedIndex);
+            // Broadcast the change
+            console.log("client used color. selectedColor, index", selectedColor, player_color.selectedIndex);
+            conn.send({ type: 'client used color', color: selectedColor, index: player_color.selectedIndex });
+            // Remove the color selector, and show the color label
+            player_color.style.display = 'none';
+            document.getElementById('color_selector_label').style.display = 'none';
+            document.getElementById('selected_color_label').innerText = `Color: ${selectedColor}`;
+
             if (team === 'Red Team') {
                 red_team.push({ name, peerId });
-                myPlayer.color = 'green';
+                //myPlayer.color = 'green';
                 conn.send({ type: 'set_gameInstance_player', player: myPlayer });
                 sendUserInputs = true;
             } else if (team === 'Blue Team') {
                 blue_team.push({ name, peerId });
-                myPlayer.color = 'blue';
+                //myPlayer.color = 'blue';
                 conn.send({ type: 'set_gameInstance_player', player: myPlayer });
                 sendUserInputs = true;
             } else {
                 spectators.push({ name, peerId });
-                myPlayer.color = 'grey';
+                //myPlayer.color = 'grey';
                 conn.send({ type: 'remove_gameInstance_player', player: myPlayer });
                 sendUserInputs = false;
             }

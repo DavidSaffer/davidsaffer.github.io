@@ -36,7 +36,7 @@
     min-width: 100px;
 }
 
-/* Overall modal styling */
+/* Overall modal styling =================================================*/
 #game .modal {
     display: flex; /* Use flexbox for centering */
     position: fixed; /* Fix position to the viewport */
@@ -162,7 +162,7 @@
 }
 
 /* Start button container */
-.game_modal_start_button_container {
+.game_modal_start_button_container, .game_modal_color_selection_container {
     margin-top: 20px; /* Space above the start button */
     text-align: center; /* Center-align the button */
 }
@@ -183,7 +183,7 @@
     background-color: #27ae60; /* Slightly darker green on hover */
 }
 
-
+/* Overall modal styling =================================================*/
 /* END GAME SETTINGS MODAL ============================================== */
 
 /* Style for player list columns */
