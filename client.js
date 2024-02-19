@@ -979,6 +979,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
+            // When a client disconects
+            conn.on('close', () => {
+                console.log('Client disconnected');
+                delete connectedClients[conn.peer];
+                delete gameInstance.connections[conn.peer];
+                if (gameInstance.players[conn.peer]) {
+                    delete gameInstance.players[conn.peer];
+                }
+                if (gameInstance.spectators[conn.peer]) {
+                    delete gameInstance.spectators[conn.peer];
+                }
+
+            });
+
         });
 
         // Handle when host clicks start / pause button
@@ -1182,6 +1196,11 @@ document.addEventListener("DOMContentLoaded", () => {
             if (data.type === 'showGameModal') {
                 showGameModal();
             }
+        });
+
+        conn.on('close', () => {
+            alert('Connection to host lost');
+            go_to_lobby();
         });
 
         document.querySelectorAll('.game_modal_join_button').forEach(button => {
