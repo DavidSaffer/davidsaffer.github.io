@@ -83,8 +83,47 @@
                 </div>
                 <div class="game_modal_start_button_container">
                     <button id="game_modal_start_button" class="start-button">Start Game</button>
+                    <button id="game_modal_restart_button" class="start-button" style="display: none;">Restart Game</button>
+                </div>
+
+                <div id="game_settings_container" style="display: none;">
+                    <h3>Game Settings</h3>
+                    <div class="setting">
+                        <label for="enemySpawnRate">Enemy Spawn Rate (enemies per second):</label>
+                        <input type="number" id="enemySpawnRate" name="enemySpawnRate" value="1">
+                    </div>
+                    <div class="setting">
+                        <label for="enemySpeed">Enemy Speed:</label>
+                        <input type="number" id="enemySpeed" name="enemySpeed" value="25">
+                    </div>
+                    <div class="setting">
+                        <label for="coinSpawnRate">Coin Spawn Rate (coins per second):</label>
+                        <input type="number" id="coinSpawnRate" name="coinSpawnRate" value="75">
+                    </div>
+                    <div class="setting">
+                        <label for="coinLifespan">Coin Lifespan (secconds):</label>
+                        <input type="number" id="coinLifespan" name="coinLifespan" value="5">
+                    </div>
+                    <div class="setting">
+                        <label for="playerLives">Player Lives:</label>
+                        <input type="number" id="playerLives" name="playerLives" value="3">
+                    </div>
+                    <div class="setting">
+                        <label for="playerSpeed">Player Speed:</label>
+                        <input type="number" id="playerSpeed" name="playerSpeed" value="15">
+                    </div>
+                    <div class="setting">
+                        <label for="spawnProtectionDuration">Spawn Protection Duration (secconds):</label>
+                        <input type="number" id="spawnProtectionDuration" name="spawnProtectionDuration" value="1">
+                    </div>
+                    <div class="setting">
+                        <label for="allowGhosts">Allow Ghosts (players can move after death):</label>
+                        <input type="checkbox" id="allowGhosts" name="allowGhosts" checked>
+                    </div>
                 </div>
             </div>
+
+            
             
             
         </div>

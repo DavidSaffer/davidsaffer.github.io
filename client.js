@@ -707,6 +707,12 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // Remove '>' and '<' characters
         inputName = inputName.replace(/[<>]/g, '');
+
+        // Dont allow blank names
+        if (inputName === '') {
+            inputName = 'Anonymous';
+        }
+
         name = inputName;
         go_to_lobby();
     }
@@ -884,6 +890,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (conn === undefined) {
             return;
         }
+        if (conn === null) {
+            return;
+        }
         if (conn._open === false) {
             return;
         }
@@ -912,7 +921,50 @@ document.addEventListener("DOMContentLoaded", () => {
         isHost = true;
         conn = null;
         sendUserInputs = false;
-        // Main JavaScript file
+
+        // Add game settings to the modal
+        const game_settings = document.getElementById('game_settings_container');
+        game_settings.style.display = 'block';
+
+        // Function to update a specific GameConfig setting with correction for division by 1000 where needed
+        function updateConfigSetting(settingName, value, isCheckbox = false) {
+            GameConfig[settingName] = isCheckbox ? value.checked : parseInt(value, 10);
+        }
+
+        // Since inputs like textboxes, number inputs, and checkboxes are changed, not clicked, we use 'onchange' for them
+        document.getElementById('enemySpawnRate').value = GameConfig.enemySpawnRate / 1000;
+        document.getElementById('enemySpawnRate').onchange = function() {
+            updateConfigSetting('enemySpawnRate', this.value * 1000);
+        };
+        document.getElementById('enemySpeed').value = GameConfig.enemySpeed;
+        document.getElementById('enemySpeed').onchange = function() {
+            updateConfigSetting('enemySpeed', this.value);
+        };
+        document.getElementById('coinSpawnRate').value = GameConfig.coinSpawnRate / 1000;
+        document.getElementById('coinSpawnRate').onchange = function() {
+            updateConfigSetting('coinSpawnRate', this.value * 1000);
+        };
+        document.getElementById('coinLifespan').value = GameConfig.coinLifespan / 1000;
+        document.getElementById('coinLifespan').onchange = function() {
+            updateConfigSetting('coinLifespan', this.value * 1000);
+        };
+        document.getElementById('playerLives').value = GameConfig.playerLives;
+        document.getElementById('playerLives').onchange = function() {
+            updateConfigSetting('playerLives', this.value);
+        };
+        document.getElementById('playerSpeed').value = GameConfig.playerSpeed;
+        document.getElementById('playerSpeed').onchange = function() {
+            updateConfigSetting('playerSpeed', this.value);
+        };
+        document.getElementById('spawnProtectionDuration').value = GameConfig.spawnProtectionDurration / 1000;
+        document.getElementById('spawnProtectionDuration').onchange = function() {
+            updateConfigSetting('spawnProtectionDurration', this.value * 1000); // Correcting for misspelling in your original object
+        };
+        document.getElementById('allowGhosts').checked = GameConfig.allowGhosts;
+        document.getElementById('allowGhosts').onchange = function() {
+            updateConfigSetting('allowGhosts', this, true);
+        };
+
         
         // Create a new game instance
         const gameInstance = new Game(AppConfig.canvasWidth, AppConfig.canvasHeight, peerId, GameConfig);
@@ -938,7 +990,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Add an event listener to handle changes
         player_color.onchange = function() {
             selectedColor = player_color.value;
-            //myPlayer.color = selectedColor;
+            myPlayer.color = selectedColor;
         }
         
         
@@ -1001,6 +1053,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         
+
+        
         
 
         let connectedClients = {};
@@ -1010,6 +1064,13 @@ document.addEventListener("DOMContentLoaded", () => {
             Object.values(connectedClients).forEach(client => {
                 client.send(message);
             }); 
+        }
+
+        document.getElementById('game_modal_restart_button').style.display = 'inline-block';
+        document.getElementById('game_modal_restart_button').onclick = function() {
+            hostGameInstance.restart();
+            gameWorker.postMessage({ command: 'start', fps: 60 });
+            broadcast({ type: 'gameRestarting' });
         }
 
         // When someone connects to this host
@@ -1110,6 +1171,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // When a client disconects
             conn.on('close', () => {
+                let disconected_player_color;
+                if (gameInstance.players[conn.peer]) {
+                    disconected_player_color = gameInstance.players[conn.peer].color;
+                }
                 console.log('Client disconnected');
                 delete connectedClients[conn.peer];
                 delete gameInstance.connections[conn.peer];
@@ -1125,6 +1190,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (playerUI) {
                     playerUI.remove();
                 }
+                // remove them from the team
+                red_team = red_team.filter(player => player.peerId !== conn.peer);
+                blue_team = blue_team.filter(player => player.peerId !== conn.peer);
+                spectators = spectators.filter(player => player.peerId !== conn.peer);
+                updatePlayerList('Red', red_team);
+                updatePlayerList('Blue', blue_team);
+                updatePlayerList('Spectators', spectators);
+                broadcast({ type: 'team_update', red_team, blue_team, spectators });
+
+                // add their color back
+                if (disconected_player_color === undefined) {
+                    return;
+                }
+                console.log("adding color back", disconected_player_color);
+                const color_option = document.createElement('option');
+                color_option.value = disconected_player_color;
+                color_option.innerText = disconected_player_color;
+                player_color.appendChild(color_option);
             });
 
         });
@@ -1226,13 +1309,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let myPlayer = new Player(AppConfig.canvasWidth, AppConfig.canvasHeight, 100, 100, peerId, 0.05);
         myPlayer.name = name;
+
+        // Hide the game settings for clients
+        const game_settings = document.getElementById('game_settings_container');
+        game_settings.style.display = 'none';
         
 
         conn = peer.connect(lobby_code);
         console.log("conn: ", conn);
 
-        // Color selection setup
         const player_color = document.getElementById('player_color');
+        let selectedColor;
 
         
         conn.on('open', () => {
@@ -1240,7 +1327,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log('Connected to: ', conn.peer);
             //conn.send({ type: 'playerConnect', myPlayer }); // TODO: need better solution (spectator?)
             conn.send({ type: 'initial_data_request' });
-            
+            // Color selection setup
         });
 
         
@@ -1252,7 +1339,7 @@ document.addEventListener("DOMContentLoaded", () => {
             go_to_lobby();
         });
 
-        let selectedColor = player_color.value;
+        
 
         showGame();
         showGameModal();
