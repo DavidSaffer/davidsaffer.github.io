@@ -15,8 +15,10 @@ const AppConfig = {
 const GameConfig = {
     enemySpawnRate: 100, // Spawn an enemy every second
     enemySpeed: 25,
+
     coinSpawnRate: 75, // Spawn a coin every 0.5 seconds
     coinLifespan: 5000, // 5 seconds
+
     playerLives: 3,
     playerSpeed: 15,
 
@@ -84,6 +86,7 @@ class Player {
         this.lives = GameConfig.playerLives;
         this.score = 0;
         this.ready = false;
+        this.moveSpeed = GameConfig.playerSpeed;
     }
 
     draw(ctx) {
@@ -155,7 +158,7 @@ class Enemy {
         const size = Math.min(cWidth, cHeight);
         this.width = size * this.enemieScale; 
         this.height = size * this.enemieScale;
-        this.speed = speed;
+        this.speed = GameConfig.enemySpeed;
 
         this.x, this.y, this.dx, this.dy;
         const startEdge = Math.floor(Math.random() * 4);
@@ -465,14 +468,14 @@ class Game {
     }
 
     spawnEnemy() {
-        if (Date.now() - this.lastEnemySpawn > this.enemySpawnRate) {
+        if (Date.now() - this.lastEnemySpawn > GameConfig.enemySpawnRate) {
             this.enemies.push(new Enemy(this.cWidth, this.cHeight, 10));
             this.lastEnemySpawn = Date.now();
         }
     }
 
     spawnCoin() {
-        if (Date.now() - this.lastCoinSpawn > this.coinSpawnRate) {
+        if (Date.now() - this.lastCoinSpawn > GameConfig.coinSpawnRate) {
             const newCoin = new Coin(this.cWidth, this.cHeight);
             this.coins.push(newCoin);
             this.lastCoinSpawn = Date.now();
@@ -812,7 +815,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let conn; // client connection to host, used for sending wasd commands
     let sendUserInputs = false;
-    let clientPlayer = null;
+    //let clientPlayer = null;
     
     let red_team = [];
     let spectators = [];
@@ -924,7 +927,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Add game settings to the modal
         const game_settings = document.getElementById('game_settings_container');
-        game_settings.style.display = 'block';
+        //game_settings.style.display = 'block';
+
+        const game_settings_button = document.getElementById('game_modal_host_settings_button');
+        game_settings_button.style.display = 'inline-block';
+        game_settings_button.onclick = function() {
+            if (game_settings.style.display === 'block') {
+                game_settings.style.display = 'none';
+            } else {
+                game_settings.style.display = 'block';
+            }
+        }
 
         // Function to update a specific GameConfig setting with correction for division by 1000 where needed
         function updateConfigSetting(settingName, value, isCheckbox = false) {
@@ -932,17 +945,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Since inputs like textboxes, number inputs, and checkboxes are changed, not clicked, we use 'onchange' for them
-        document.getElementById('enemySpawnRate').value = GameConfig.enemySpawnRate / 1000;
+        document.getElementById('enemySpawnRate').value = (1/GameConfig.enemySpawnRate) * 1000;
         document.getElementById('enemySpawnRate').onchange = function() {
-            updateConfigSetting('enemySpawnRate', this.value * 1000);
+            console.log("spawnrate changed", this.value);
+            updateConfigSetting('enemySpawnRate', (1/this.value) * 1000);
+            console.log(GameConfig.enemySpawnRate);
         };
         document.getElementById('enemySpeed').value = GameConfig.enemySpeed;
         document.getElementById('enemySpeed').onchange = function() {
             updateConfigSetting('enemySpeed', this.value);
         };
-        document.getElementById('coinSpawnRate').value = GameConfig.coinSpawnRate / 1000;
+        document.getElementById('coinSpawnRate').value = (1/GameConfig.coinSpawnRate) * 1000;
         document.getElementById('coinSpawnRate').onchange = function() {
-            updateConfigSetting('coinSpawnRate', this.value * 1000);
+            updateConfigSetting('coinSpawnRate', (1/this.value) * 1000);
         };
         document.getElementById('coinLifespan').value = GameConfig.coinLifespan / 1000;
         document.getElementById('coinLifespan').onchange = function() {
@@ -973,7 +988,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let myPlayer = new Player(AppConfig.canvasWidth, AppConfig.canvasHeight, 100, 100, peerId, 0.05);
         myPlayer.name = name;
         userInput(myPlayer);
-        clientPlayer = myPlayer;
+        //clientPlayer = myPlayer;
         //gameInstance.players[peerId] = myPlayer;
 
         // Color selection setup
@@ -1315,6 +1330,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const game_settings = document.getElementById('game_settings_container');
         game_settings.style.display = 'none';
         
+        const game_settings_button = document.getElementById('game_modal_host_settings_button');
+        game_settings_button.style.display = 'none';
 
         conn = peer.connect(lobby_code);
         console.log("conn: ", conn);
