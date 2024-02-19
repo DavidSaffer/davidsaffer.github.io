@@ -990,7 +990,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Add an event listener to handle changes
         player_color.onchange = function() {
             selectedColor = player_color.value;
-            myPlayer.color = selectedColor;
+            //myPlayer.color = selectedColor;
         }
         
         
@@ -1141,6 +1141,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     player_color.remove(data.index);
                     console.log('color used', data.color, player_color.values);
                     broadcast({ type: 'color used', color: data.color, index: data.selectedIndex });
+                    selectedColor = player_color.value;
                 }
 
                 if (data.type === 'userInput') {
