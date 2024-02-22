@@ -705,25 +705,50 @@ function renderGame(ctx, players, enemies, coins, missile, paused) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-
-
     const peer = new Peer();
-      
     let name = '';
     let peerId = null;
+    let loadingMessageInterval;
 
-    
+    // Initially disable buttons
     document.getElementById('create_lobby_button').disabled = true;    
     document.getElementById('join_lobby_button').disabled = true;
 
-    peer.on('open', function(id) {
-        console.log('My peer ID is: ' + id);
-        peerId = id;
+    // Function to update the status message with an animation
+    const updateLoadingMessage = () => {
         const statusMessage = document.getElementById('statusMessage');
-        statusMessage.innerText = 'Peer connection established';
-        document.getElementById('create_lobby_button').disabled = false;    
-        document.getElementById('join_lobby_button').disabled = false;
-    });
+        let loadingText = statusMessage.innerText;
+        const dots = loadingText.substring(23); // Get the dots part of the message
+        if(dots.length < 3) {
+            statusMessage.innerText = 'Loading peer connection' + '.'.repeat(dots.length + 1);
+        } else {
+            statusMessage.innerText = 'Loading peer connection';
+        }
+    };
+
+    // Start animating the loading message
+    loadingMessageInterval = setInterval(updateLoadingMessage, 500);
+
+    // Simulate a delay before establishing the peer connection
+    setTimeout(() => {
+        const peer = new Peer();
+
+        peer.on('open', function(id) {
+            console.log('My peer ID is: ' + id);
+            peerId = id;
+
+            // Stop the loading message animation
+            clearInterval(loadingMessageInterval);
+
+            // Update the status message to indicate the connection is established
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.innerText = 'Peer connection established';
+
+            // Enable buttons
+            document.getElementById('create_lobby_button').disabled = false;    
+            document.getElementById('join_lobby_button').disabled = false;
+        });
+    }, 1500); // 1500 milliseconds = 1.5 seconds
 
     // peer.on('data', function(data) {
     //     console.log('Received', data);
@@ -770,11 +795,11 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener('load', function() {
         if (localStorage.getItem('reloadForFunction') === 'true') {
             // Call your function here
-            name = localStorage.getItem('name');
+            name = localStorage.getItem('userName');
             go_to_lobby();
             // Remember to clear the flag so it doesn't run again on subsequent loads
             localStorage.removeItem('reloadForFunction');
-            localStorage.removeItem('name');
+            localStorage.removeItem('userName');
         }
     });
 
@@ -1158,7 +1183,8 @@ document.addEventListener("DOMContentLoaded", () => {
             // go_to_lobby();
             // Set a flag before reloading
             localStorage.setItem('reloadForFunction', 'true');
-            localStorage.setItem('userName', name);
+            console.log(myPlayer.name);
+            localStorage.setItem('userName', myPlayer.name);
             location.reload(true);
             // Here you would add the logic to leave the team or game
         }
