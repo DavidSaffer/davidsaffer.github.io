@@ -30,8 +30,6 @@ const GameConfig = {
 
 
 
-
-
 /**
  * Represents a player in the game.
  * @class
@@ -558,6 +556,7 @@ class Game {
 
     gameTick() {
         this.broadcast({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
+
         // for (const conn of this.connections) {
         //     conn.send({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
         // }
@@ -992,6 +991,8 @@ document.addEventListener("DOMContentLoaded", () => {
         conn.send({ type: 'userInput', id: peerId, commands: userCommands });
     }
 
+    
+
 
     /**
      * Starts a game instance and setups up this user as the game host
@@ -1071,6 +1072,26 @@ document.addEventListener("DOMContentLoaded", () => {
             updateConfigSetting('allowGhosts', this, true);
         };
 
+        // Send info to python server listening
+        const socket = new WebSocket('ws://localhost:6789');
+
+        socket.onopen = function(e) {
+            console.log("[open] Connection established");
+            socket.send("Hello, Server!"); // Send data to server
+        };
+
+        socket.onclose = function(event) {
+            if (event.wasClean) {
+              console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+            } else {
+              // e.g. server process killed or network down
+              console.log('[close] Connection died');
+            }
+        };
+          
+        socket.onerror = function(error) {
+            console.log(`[error] ${error.message}`);
+        };
         
         // Create a new game instance
         let gameInstance = new Game(AppConfig.canvasWidth, AppConfig.canvasHeight, peerId, GameConfig);
@@ -1079,6 +1100,47 @@ document.addEventListener("DOMContentLoaded", () => {
         let myPlayer = new Player(AppConfig.canvasWidth, AppConfig.canvasHeight, 100, 100, peerId, 0.05);
         myPlayer.name = name;
         userInput(myPlayer);
+        socket.onmessage = function(event) {
+            console.log(`[message] Data received from server: ${event}`);
+            console.log(event);
+            const data = JSON.parse(event.data);
+            // Here, you can handle messages from the server, such as game state updates
+            if (data) {
+                console.log("actoin RECIEVED")
+                applyActionToGame(data.action);
+            }
+        };
+        function applyActionToGame(action) {
+            console.log("ACCTION RECIVED", action);
+            if (action === 'left') {
+                myPlayer.left = true;
+            }
+            if (action === 'stop left') {
+                myPlayer.left = false;
+            }
+
+            if (action === 'up') {
+                myPlayer.up = true;
+            }
+            if (action === 'stop up') {
+                myPlayer.up = false;
+            }
+
+            if (action === 'right') {
+                myPlayer.right = true;
+            }
+            if (action === 'stop right') {
+                myPlayer.right = false;
+            }
+
+            if (action === 'down') {
+                myPlayer.down = true;
+            }
+            if (action === 'stop down') {
+                myPlayer.down = false;
+            }
+        }
+
         //clientPlayer = myPlayer;
         //gameInstance.players[peerId] = myPlayer;
 
@@ -1111,6 +1173,42 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (e.data.status === 'tick') {
                     // Handle the tick - Update game logic, etc.
                     gameInstance.gameTick();
+
+
+                    const simplifiedPlayer = {
+                        x: gameInstance.players[peerId].x,
+                        y: gameInstance.players[peerId].y,
+                        dx: gameInstance.players[peerId].dx,
+                        dy: gameInstance.players[peerId].dy,
+                        score: gameInstance.players[peerId].score,
+                        lives: gameInstance.players[peerId].lives
+                    }
+
+                    const simplifiedEnemies = gameInstance.enemies.map(enemy => { 
+                        return {
+                            x: enemy.x,
+                            y: enemy.y,
+                            dx: enemy.dx,
+                            dy: enemy.dy
+                        }
+                    });
+
+                    const simplifiedCoins = gameInstance.coins.map(coin => { 
+                        return {
+                            x: coin.x,
+                            y: coin.y,
+                        }
+                    });
+
+                    const gameState = {
+                        type: 'gameState',
+                        player: simplifiedPlayer,
+                        enemies: simplifiedEnemies,
+                        coins: simplifiedCoins,
+                        paused: gameInstance.paused
+                    };
+                    socket.send(JSON.stringify(gameState));
+                    
                     // Check if the game ended
                     if (gameInstance.gameOver) {
                         // set each player to be not ready
