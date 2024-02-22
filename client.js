@@ -13,8 +13,8 @@ const AppConfig = {
  * @type {Object}
  */
 const GameConfig = {
-    enemySpawnRate: 100, // Spawn an enemy every second
-    enemySpeed: 25,
+    enemySpawnRate: 1000, // Spawn an enemy every second
+    enemySpeed: 10,
 
     coinSpawnRate: 75, // Spawn a coin every 0.5 seconds
     coinLifespan: 5000, // 5 seconds
@@ -27,6 +27,10 @@ const GameConfig = {
 
     playerColors: ['Blue', 'Green', 'Purple', 'Orange', 'Pink', 'Brown', 'Black', 'White']
 };
+
+
+
+
 
 /**
  * Represents a player in the game.
@@ -151,7 +155,7 @@ class Player {
  * @param {number} [enemieScale=0.03] - The scale for the enemy's size.
  */
 class Enemy {
-    constructor(cWidth, cHeight, speed, enemieScale = .03) {
+    constructor(cWidth, cHeight, enemieScale = .03) {
         this.enemieScale = enemieScale;
         this.cWidth = cWidth;
         this.cHeight = cHeight;
@@ -168,11 +172,11 @@ class Enemy {
             this.x = Math.random() * this.cWidth;
             this.y = startEdge === 0 ? 0 : this.cHeight;
             this.dx = 0;
-            this.dy = startEdge === 0 ? speed : -speed;
+            this.dy = startEdge === 0 ? this.speed : -this.speed;
         } else {
             this.x = startEdge === 1 ? this.cWidth : 0;
             this.y = Math.random() * this.cHeight;
-            this.dx = startEdge === 1 ? -speed : speed;
+            this.dx = startEdge === 1 ? -this.speed : this.speed;
             this.dy = 0;
         }
     }
@@ -469,7 +473,7 @@ class Game {
 
     spawnEnemy() {
         if (Date.now() - this.lastEnemySpawn > GameConfig.enemySpawnRate) {
-            this.enemies.push(new Enemy(this.cWidth, this.cHeight, 10));
+            this.enemies.push(new Enemy(this.cWidth, this.cHeight));
             this.lastEnemySpawn = Date.now();
         }
     }
@@ -641,24 +645,49 @@ function renderGame(ctx, players, enemies, coins, missile, paused) {
     ctx.clearRect(0, 0, AppConfig.canvasWidth, AppConfig.canvasHeight);
 
     playerInfoContainer.innerHTML = '';
-    Object.values(players).forEach((player, index) => {
+    // Sort players by score in descending order
+    const sortedPlayers = Object.values(players).sort((a, b) => b.score - a.score);
+    
+    sortedPlayers.forEach((player, index) => {
         ctx.fillStyle = player.color;
         if (player.lives <= 0) {
             ctx.fillStyle = 'darkgrey';
         }
         ctx.fillRect(player.x, player.y, player.width, player.height);
-
+    
         // update the UI scoreboard
         const playerDiv = document.createElement('div');
         playerDiv.className = 'player-info';
+        // Set the background color of playerDiv to the player's color
+        playerDiv.style.backgroundColor = player.color;
         playerDiv.innerHTML = `
-            <p>${player.name}</p>
-            <p>Score: ${player.score}</p>
-            <p>Lives: ${player.lives}</p>
+            <p style="margin: 0; color: white;">${player.name}</p>
+            <p style="margin: 0; color: white;">Score: ${player.score}</p>
+            <p style="margin: 0; color: white;">Lives: ${player.lives}</p>
         `;
         playerInfoContainer.appendChild(playerDiv);
-
     });
+    
+
+    //playerInfoContainer.innerHTML = '';
+    // Object.values(players).forEach((player, index) => {
+    //     ctx.fillStyle = player.color;
+    //     if (player.lives <= 0) {
+    //         ctx.fillStyle = 'darkgrey';
+    //     }
+    //     ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    //     // update the UI scoreboard
+    //     const playerDiv = document.createElement('div');
+    //     playerDiv.className = 'player-info';
+    //     playerDiv.innerHTML = `
+    //         <p>${player.name}</p>
+    //         <p>Score: ${player.score}</p>
+    //         <p>Lives: ${player.lives}</p>
+    //     `;
+    //     playerInfoContainer.appendChild(playerDiv);
+
+    // });
     enemies.forEach(enemy => {
         ctx.fillStyle = 'red';
         ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
@@ -683,10 +712,17 @@ document.addEventListener("DOMContentLoaded", () => {
     let name = '';
     let peerId = null;
 
+    
+    document.getElementById('create_lobby_button').disabled = true;    
+    document.getElementById('join_lobby_button').disabled = true;
 
     peer.on('open', function(id) {
         console.log('My peer ID is: ' + id);
         peerId = id;
+        const statusMessage = document.getElementById('statusMessage');
+        statusMessage.innerText = 'Peer connection established';
+        document.getElementById('create_lobby_button').disabled = false;    
+        document.getElementById('join_lobby_button').disabled = false;
     });
 
     // peer.on('data', function(data) {
@@ -717,6 +753,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         name = inputName;
+        if (name === null || name === undefined) {
+            name = 'Anonymous';
+            console.log("name is null or undefined");
+        }
         go_to_lobby();
     }
 
@@ -725,6 +765,18 @@ document.addEventListener("DOMContentLoaded", () => {
         lobby.style.display = "flex";
         game.style.display = "none";
     }
+
+    // Then, in your page load listener
+    window.addEventListener('load', function() {
+        if (localStorage.getItem('reloadForFunction') === 'true') {
+            // Call your function here
+            name = localStorage.getItem('name');
+            go_to_lobby();
+            // Remember to clear the flag so it doesn't run again on subsequent loads
+            localStorage.removeItem('reloadForFunction');
+            localStorage.removeItem('name');
+        }
+    });
 
     // lobby page ====================================================================================
     const lobby = document.getElementById('lobby');
@@ -921,14 +973,25 @@ document.addEventListener("DOMContentLoaded", () => {
      */
     function startGame() {
         console.log('Starting game');
+        ctx.clearRect(0, 0, AppConfig.canvasWidth, AppConfig.canvasHeight);
+        // reset for if the host left earlier
+        red_team = [];
+        spectators = [];
+        blue_team = [];
+        playerColor = '';
+        updatePlayerList('red', red_team);
+        updatePlayerList('spectators', spectators);
+        updatePlayerList('blue', blue_team);
+
         isHost = true;
         conn = null;
         sendUserInputs = false;
 
+        // Set the modal button to say start. case for when host leaves and rejoins
+        document.getElementById('game_modal_start_button').innerText = 'Start';
+
         // Add game settings to the modal
         const game_settings = document.getElementById('game_settings_container');
-        //game_settings.style.display = 'block';
-
         const game_settings_button = document.getElementById('game_modal_host_settings_button');
         game_settings_button.style.display = 'inline-block';
         game_settings_button.onclick = function() {
@@ -938,6 +1001,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 game_settings.style.display = 'block';
             }
         }
+
+        
 
         // Function to update a specific GameConfig setting with correction for division by 1000 where needed
         function updateConfigSetting(settingName, value, isCheckbox = false) {
@@ -954,6 +1019,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('enemySpeed').value = GameConfig.enemySpeed;
         document.getElementById('enemySpeed').onchange = function() {
             updateConfigSetting('enemySpeed', this.value);
+            //console.log(GameConfig.enemySpeed);
         };
         document.getElementById('coinSpawnRate').value = (1/GameConfig.coinSpawnRate) * 1000;
         document.getElementById('coinSpawnRate').onchange = function() {
@@ -982,7 +1048,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         
         // Create a new game instance
-        const gameInstance = new Game(AppConfig.canvasWidth, AppConfig.canvasHeight, peerId, GameConfig);
+        let gameInstance = new Game(AppConfig.canvasWidth, AppConfig.canvasHeight, peerId, GameConfig);
         hostGameInstance = gameInstance;
         gameInstance.ctx = ctx;
         let myPlayer = new Player(AppConfig.canvasWidth, AppConfig.canvasHeight, 100, 100, peerId, 0.05);
@@ -992,21 +1058,24 @@ document.addEventListener("DOMContentLoaded", () => {
         //gameInstance.players[peerId] = myPlayer;
 
         // Color selection setup
-        const player_color = document.getElementById('player_color');
-        
-        Object.values(GameConfig.playerColors).forEach(color => {
-            const color_option = document.createElement('option');
-            color_option.value = color;
-            color_option.innerText = color;
-            player_color.appendChild(color_option);
-        });
-
-        let selectedColor = player_color.value;
-        // Add an event listener to handle changes
-        player_color.onchange = function() {
+        let player_color = document.getElementById('player_color');
+        let selectedColor;
+        function initColors() {
+            Object.values(GameConfig.playerColors).forEach(color => {
+                const color_option = document.createElement('option');
+                color_option.value = color;
+                color_option.innerText = color;
+                player_color.appendChild(color_option);
+            });
             selectedColor = player_color.value;
-            //myPlayer.color = selectedColor;
+            // Add an event listener to handle changes
+            player_color.onchange = function() {
+                selectedColor = player_color.value;
+                //myPlayer.color = selectedColor;
+            }
         }
+        
+        initColors();
         
         
 
@@ -1079,6 +1148,19 @@ document.addEventListener("DOMContentLoaded", () => {
             Object.values(connectedClients).forEach(client => {
                 client.send(message);
             }); 
+        }
+
+        // Setup / case for when host leaves the game
+        // Event listener for the leave button
+        document.getElementById('game_modal_leave_button').onclick = function() {
+            // ctx.clearRect(0, 0, AppConfig.canvasWidth, AppConfig.canvasHeight);
+            // hideGameModal();    
+            // go_to_lobby();
+            // Set a flag before reloading
+            localStorage.setItem('reloadForFunction', 'true');
+            localStorage.setItem('userName', name);
+            location.reload(true);
+            // Here you would add the logic to leave the team or game
         }
 
         document.getElementById('game_modal_restart_button').style.display = 'inline-block';
@@ -1338,6 +1420,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const player_color = document.getElementById('player_color');
         let selectedColor;
+
+        document.getElementById('game_modal_leave_button').onclick = function() {
+            ctx.clearRect(0, 0, AppConfig.canvasWidth, AppConfig.canvasHeight);
+            hideGameModal();    
+            go_to_lobby();
+            // Here you would add the logic to leave the team or game
+        }
 
         
         conn.on('open', () => {
@@ -1651,11 +1740,11 @@ document.addEventListener("DOMContentLoaded", () => {
         
 
     // Event listener for the leave button
-    document.getElementById('game_modal_leave_button').addEventListener('click', function() {
-        hideGameModal();
-        go_to_lobby();
-        // Here you would add the logic to leave the team or game
-    });
+    // document.getElementById('game_modal_leave_button').addEventListener('click', function() {
+    //     hideGameModal();
+    //     go_to_lobby();
+    //     // Here you would add the logic to leave the team or game
+    // });
 
     document.getElementById('settingsButton').addEventListener('click', function() {
         showGameModal();

@@ -25,9 +25,10 @@
 
     <div id="lobby" style="display:none">
         
+        <div id="statusMessage">Loading peer connection...</div> 
         <div class="lobby-footer">
-            <button id="create_lobby_button">Create Lobby</button>
-            <button id="join_lobby_button">Join Lobby</button>
+            <button id="create_lobby_button" disabled>Create Lobby</button>
+            <button id="join_lobby_button" disabled>Join Lobby</button>
         </div>
         <div id="lobby_modal" class="modal">
             <div class="modal_content">
@@ -86,7 +87,7 @@
                     <button id="game_modal_restart_button" class="start-button" style="display: none;">Restart Game</button>
                 </div>
                 <div class="game_modal_start_button_container">
-                    <button id="game_modal_host_settings_button" class="start-button" style="background-color: grey;">Settings</button>
+                    <button id="game_modal_host_settings_button" class="game-settings-button">Settings</button>
                 </div>
 
                 <div id="game_settings_container" style="display: none;">
