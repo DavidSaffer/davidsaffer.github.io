@@ -1,8 +1,8 @@
-import gym
-from gym import spaces
+import game_server
+from game_server import spaces
 import numpy as np
 
-class MyGameEnv(gym.Env):
+class MyGameEnv(game_server.Env):
     metadata = {'render.modes': ['console']}
     MAX_ENEMIES = 30  # Example max number
     MAX_COINS = 30  # Example max number

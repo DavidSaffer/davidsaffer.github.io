@@ -1101,6 +1101,12 @@ document.addEventListener("DOMContentLoaded", () => {
         myPlayer.name = name;
         userInput(myPlayer);
         socket.onmessage = function(event) {
+
+            if (event.data === 'reset game') {
+                gameInstance.restart();
+                gameWorker.postMessage({ command: 'start', fps: 60 });
+                return;
+            }
             console.log(`[message] Data received from server: ${event}`);
             console.log(event);
             const data = JSON.parse(event.data);
