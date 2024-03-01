@@ -1,3 +1,6 @@
+import { Player } from './player.js';
+import { Enemy } from './enemy.js';
+import { Coin } from './coin.js';
 /**
  * Configuration settings for the application's canvas.
  * @type {Object}
@@ -28,274 +31,6 @@ const GameConfig = {
     playerColors: ['Blue', 'Green', 'Purple', 'Orange', 'Pink', 'Brown', 'Black', 'White']
 };
 
-
-
-
-
-/**
- * Represents a player in the game.
- * @class
- * 
- * @param {number} cWidth - The width of the canvas.
- * @param {number} cHeight - The height of the canvas.
- * @param {number} x - The starting x-coordinate of the player.
- * @param {number} y - The starting y-coordinate of the player.
- * @param {string} id - The unique identifier for the player.
- * @param {number} [basePlayerScale=0.05] - The base scale for the player's size.
- */
-class Player {
-    constructor(cWidth, cHeight, x, y, id, basePlayerScale = 0.05 ) {
-        this.cWidth = cWidth;
-        this.cHeight = cHeight;
-
-        this.x = x;
-        this.y = y;
-        this.id = id;
-
-        this.left = false;
-        this.right = false;
-        this.up = false;
-        this.down = false;
-        this.action = false;
-
-        this.score = 0;
-        this.lives = GameConfig.playerLives;
-        this.name = '...';
-
-        this.moveSpeed = GameConfig.playerSpeed;
-
-        this.dx = 0;
-        this.dy = 0;
-
-        this.basePlayerScale = basePlayerScale;
-        this.playerScale = basePlayerScale;
-        const size = Math.min(cWidth, cHeight);
-        this.width = size * basePlayerScale; // Example: 5% of canvas width
-        this.height = size * basePlayerScale; // Same for height, adjust percentage as needed
-
-        this.ready = true;
-
-        // Missile shooting cooldown
-        this.missileCooldown = 100; // 500 ms cooldown
-        this.lastMissileShot = 0; // Timestamp of the last shot
-
-        this.hasJoinedTeam = false;
-    }
-
-    loseLife() {
-        this.lives -= 1;
-    }
-
-    reset() {
-        this.lives = GameConfig.playerLives;
-        this.score = 0;
-        this.ready = false;
-        this.moveSpeed = GameConfig.playerSpeed;
-    }
-
-    draw(ctx) {
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
-
-    shootMissiles(missilesArray) {
-        const directions = ['up', 'down', 'left', 'right'];
-        directions.forEach(direction => {
-            missilesArray.push(new Missile(this.x, this.y, direction, this.id));
-        });
-        this.lastMissileShot = Date.now(); // Update the timestamp of the last shot
-    }
-
-    update(){
-        if (this.lives <= 0) {
-            this.dx = 0;
-            this.dy = 0;
-            return;
-        }
-
-        this.dx = 0;
-        this.dy = 0;
-        
-
-        if (this.left) {
-            this.dx += -this.moveSpeed;
-        }
-        if (this.right) {
-            this.dx += this.moveSpeed;
-        }
-        if (this.up) {
-            this.dy += -this.moveSpeed;
-        }
-        if (this.down) {
-            this.dy += this.moveSpeed;
-        }
-        // Shooting missiles
-        // if (this.action && Date.now() - this.lastMissileShot > this.missileCooldown) {
-        //     this.shootMissiles(misslesArray);
-        // }
-
-        this.x += this.dx;
-        this.y += this.dy;
-        
-
-        // Handle boundaries
-        this.x = Math.max(0, Math.min(this.x, this.cWidth - this.width));
-        this.y = Math.max(0, Math.min(this.y, this.cHeight - this.height));
-
-    }
-}
-
-/**
- * Represents an enemy in the game.
- * @class
- * 
- * @param {number} cWidth - The width of the canvas.
- * @param {number} cHeight - The height of the canvas.
- * @param {number} speed - The speed of the enemy.
- * @param {number} [enemieScale=0.03] - The scale for the enemy's size.
- */
-class Enemy {
-    constructor(cWidth, cHeight, enemieScale = .03) {
-        this.enemieScale = enemieScale;
-        this.cWidth = cWidth;
-        this.cHeight = cHeight;
-        const size = Math.min(cWidth, cHeight);
-        this.width = size * this.enemieScale; 
-        this.height = size * this.enemieScale;
-        this.speed = GameConfig.enemySpeed;
-
-        this.x, this.y, this.dx, this.dy;
-        const startEdge = Math.floor(Math.random() * 4);
-        const isVertical = startEdge % 2 === 0;
-
-        if (isVertical) {
-            this.x = Math.random() * this.cWidth;
-            this.y = startEdge === 0 ? 0 : this.cHeight;
-            this.dx = 0;
-            this.dy = startEdge === 0 ? this.speed : -this.speed;
-        } else {
-            this.x = startEdge === 1 ? this.cWidth : 0;
-            this.y = Math.random() * this.cHeight;
-            this.dx = startEdge === 1 ? -this.speed : this.speed;
-            this.dy = 0;
-        }
-    }
-
-    draw(ctx) {
-        ctx.fillStyle = 'red';
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
-
-    update() {
-
-        this.x += this.dx;
-        this.y += this.dy;
-
-        // Remove the enemy if it goes off screen
-        if (this.x < -this.width || this.x > this.cWidth ||
-            this.y < -this.height || this.y > this.cHeight) {
-            return false;
-        }
-        return true;
-    }
-}
-
-/**
- * Represents a coin in the game.
- * @class
- * 
- * @param {number} cWidth - The width of the canvas.
- * @param {number} cHeight - The height of the canvas.
- * @param {number} [coinScale=0.015] - The scale for the coin's size.
- */
-class Coin {
-    constructor(cWidth, cHeight, coinScale = .015) {
-        this.coinScale = coinScale;
-        const size = Math.min(cWidth, cHeight);
-        this.originalWidth = size * this.coinScale; 
-        this.originalHeight = size * this.coinScale;
-        //this.originalWidth = 20; // Original size of the coin
-        //this.originalHeight = 20;
-        this.width = this.originalWidth;
-        this.height = this.originalHeight;
-
-        this.x = Math.random() * (cWidth - this.width); // Random position
-        this.y = Math.random() * (cHeight - this.height);
-
-        this.spawnTime = Date.now(); // Store the spawn time
-        this.lastShrinkTime = Date.now();
-        this.shrinkInterval = 1000; // Interval between shrinks in milliseconds
-        this.lifespan = 5000; // 5 seconds in milliseconds
-    }
-
-    draw(ctx) {
-        ctx.fillStyle = 'yellow'; // Color of the coin
-        //ctx.fillRect(this.x, this.y, this.width, this.height);
-        ctx.beginPath();
-        ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.width / 2, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    update(settings) {
-        const now = Date.now();
-        if (settings.coinDespawn) {
-            if (settings.cointTick){
-                if (now - this.lastShrinkTime > this.shrinkInterval) {
-                    const elapsed = now - this.spawnTime;
-                    const remainingLife = Math.max(this.lifespan - elapsed, 0);
-                    const shrinkFactor = remainingLife / this.lifespan;
-                    this.width = this.originalWidth * shrinkFactor;
-                    this.height = this.originalHeight * shrinkFactor;
-                    this.lastShrinkTime = now;
-                }
-            }
-            else {
-                const elapsed = now - this.spawnTime;
-                const remainingLife = Math.max(this.lifespan - elapsed, 0);
-                const shrinkFactor = remainingLife / this.lifespan;
-                this.width = this.originalWidth * shrinkFactor;
-                this.height = this.originalHeight * shrinkFactor;
-            }
-        }
-    }
-}
-
-/**
- * Represents a missile shot by a player.
- * @class
- * 
- * @param {number} x - The starting x-coordinate of the missile.
- * @param {number} y - The starting y-coordinate of the missile.
- * @param {string} direction - The direction of the missile ('up', 'down', 'left', 'right').
- * @param {string} ownerId - The ID of the player who shot the missile.
- */
-class Missile {
-    constructor(x, y, direction, ownerId) {
-        this.x = x;
-        this.y = y;
-        this.direction = direction; // 'up', 'down', 'left', 'right'
-        this.speed = 40; // Adjust as needed
-        this.ownerId = ownerId;
-    }
-
-    update() {
-        // Update missile position based on its direction
-        switch(this.direction) {
-            case 'up':
-                this.y -= this.speed;
-                break;
-            case 'down':
-                this.y += this.speed;
-                break;
-            case 'left':
-                this.x -= this.speed;
-                break;
-            case 'right':
-                this.x += this.speed;
-                break;
-        }
-    }
-}
 
 /**
  * Represents the game state and logic.
@@ -473,14 +208,14 @@ class Game {
 
     spawnEnemy() {
         if (Date.now() - this.lastEnemySpawn > GameConfig.enemySpawnRate) {
-            this.enemies.push(new Enemy(this.cWidth, this.cHeight));
+            this.enemies.push(new Enemy(this.cWidth, this.cHeight, GameConfig));
             this.lastEnemySpawn = Date.now();
         }
     }
 
     spawnCoin() {
         if (Date.now() - this.lastCoinSpawn > GameConfig.coinSpawnRate) {
-            const newCoin = new Coin(this.cWidth, this.cHeight);
+            const newCoin = new Coin(this.cWidth, this.cHeight, GameConfig);
             this.coins.push(newCoin);
             this.lastCoinSpawn = Date.now();
         }
@@ -1076,7 +811,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let gameInstance = new Game(AppConfig.canvasWidth, AppConfig.canvasHeight, peerId, GameConfig);
         hostGameInstance = gameInstance;
         gameInstance.ctx = ctx;
-        let myPlayer = new Player(AppConfig.canvasWidth, AppConfig.canvasHeight, 100, 100, peerId, 0.05);
+        let myPlayer = new Player(AppConfig.canvasWidth, AppConfig.canvasHeight, 100, 100, peerId, GameConfig, 0.05);
         myPlayer.name = name;
         userInput(myPlayer);
         //clientPlayer = myPlayer;
