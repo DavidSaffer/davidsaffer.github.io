@@ -1,45 +1,11 @@
-import { Player } from './player.js';
-import { Game } from './game.js';
-import { renderGame } from './game.js';
-/**
- * Configuration settings for the application's canvas.
- * @type {Object}
- */
-const AppConfig = {
-    canvasWidth: 16 * 100,
-    canvasHeight: 9 * 100
-    // Add more configuration settings as needed
-};
-
-/**
- * Configuration settings for game mechanics.
- * @type {Object}
- */
-const GameConfig = {
-    enemySpawnRate: 1000, // Spawn an enemy every second
-    enemySpeed: 10,
-
-    coinSpawnRate: 1000, // Spawn a coin every 0.5 seconds
-    coinLifespan: 5000, // 5 seconds
-
-    playerLives: 3,
-    playerSpeed: 15,
-
-    spawnProtectionDurration: 1 * 1000, // 1 second
-    allowGhosts: true, // if true, players can still move after they die
-
-    playerColors: ['Blue', 'Green', 'Purple', 'Orange', 'Pink', 'Brown', 'Black', 'White']
-};
-
-
+import { Player } from './game/player.js';
+import { Game } from './game/game.js';
+import { renderGame } from './game/game.js';
+import { AppConfig, GameConfig } from './game/config.js';
 
 document.addEventListener("DOMContentLoaded", () => {
-    const peer = new Peer();
-    let name = '';
-    let peerId = null;
-    let loadingMessageInterval;
-
-    // Initially disable buttons
+    // Initially disable join/create buttons
+    // Wait untill connected 
     document.getElementById('create_lobby_button').disabled = true;    
     document.getElementById('join_lobby_button').disabled = true;
 
@@ -56,33 +22,29 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // Start animating the loading message
+    let loadingMessageInterval;
     loadingMessageInterval = setInterval(updateLoadingMessage, 500);
 
-    // Simulate a delay before establishing the peer connection
-    setTimeout(() => {
-        const peer = new Peer();
-
-        peer.on('open', function(id) {
-            console.log('My peer ID is: ' + id);
-            peerId = id;
-
-            // Stop the loading message animation
-            clearInterval(loadingMessageInterval);
-
-            // Update the status message to indicate the connection is established
-            const statusMessage = document.getElementById('statusMessage');
-            statusMessage.innerText = 'Peer connection established';
-
-            // Enable buttons
-            document.getElementById('create_lobby_button').disabled = false;    
-            document.getElementById('join_lobby_button').disabled = false;
-        });
-    }, 1500); // 1500 milliseconds = 1.5 seconds
-
-    // peer.on('data', function(data) {
-    //     console.log('Received', data);
-    // });
+    const peer = new Peer();
+    let name = '';
+    let peerId = null;
     
+
+    peer.on('open', function(id) {
+        console.log('My peer ID is: ' + id);
+        peerId = id;
+
+        // Stop the loading message animation
+        clearInterval(loadingMessageInterval);
+
+        // Update the status message to indicate the connection is established
+        const statusMessage = document.getElementById('statusMessage');
+        statusMessage.innerText = 'Peer connection established';
+
+        // Enable buttons
+        document.getElementById('create_lobby_button').disabled = false;    
+        document.getElementById('join_lobby_button').disabled = false;
+    });    
 
     // Query DOM
     // initial page
@@ -140,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const lobby_modal = document.getElementById('lobby_modal');
     const lobby_modal_title = document.getElementById('lobby_modal_title');
-    // const lobby_modal_text = document.getElementById('lobby_modal_text');
+
     const lobby_modal_input = document.getElementById('lobby_modal_input');
     const lobby_modal_button = document.getElementById('lobby_modal_button');
 
@@ -162,7 +124,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Set up the click event listener for the copy button
     lobby_modal_coppy_button.onclick = copyLobbyCode;
 
-
     create_lobby_button.onclick = function() {
         // Set the lobby code to the input's value
         lobby_modal_code.style.display = "block";
@@ -182,8 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
         lobby_modal.style.display = "block";
         lobby_modal_title.innerText = "Lobby Code";
 
-        // lobby_modal_text.style.display = "block"; // Show text
-        // lobby_modal_text.innerText = peerId;
 
         lobby_modal_button.onclick = function() {
             startGame();
@@ -208,20 +167,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // end lobby page ====================================================================================
 
     // Game Page =========================================================================================
-
     const canvas = document.getElementById('game_canvas');
     const ctx = canvas.getContext('2d');
-    
-    // Use values from the AppConfig object
     canvas.width = AppConfig.canvasWidth;
     canvas.height = AppConfig.canvasHeight;
-
     let isHost = false;
     let hostGameInstance = null;
-
     let conn; // client connection to host, used for sending wasd commands
     let sendUserInputs = false;
-    //let clientPlayer = null;
     
     let red_team = [];
     let spectators = [];
@@ -229,15 +182,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let playerColor = '';
     const game_modal_lobby_code = document.getElementById('game_modal_lobby_code');
 
-    let userCommands = {
-        left: false,
-        up: false,
-        right: false,
-        down: false,
-        action: false
-    }
     let justPressed = false;
-    function userInput(obj, connection) {
+    function userInput(obj) {
         document.addEventListener('keydown', function(e) {
             if (e.key === "ArrowLeft" || e.key === "a") {
                 if (!obj.left) {
@@ -326,7 +272,6 @@ document.addEventListener("DOMContentLoaded", () => {
      * Starts a game instance and setups up this user as the game host
      */
     function startGame() {
-        console.log('Starting game');
         ctx.clearRect(0, 0, AppConfig.canvasWidth, AppConfig.canvasHeight);
         // reset for if the host left earlier
         red_team = [];
@@ -437,7 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let gameWorker;
         if (window.Worker) {
-            gameWorker = new Worker('webworker.js');
+            gameWorker = new Worker('game/webworker.js');
             gameWorker.onmessage = function(e) {
                 if (e.data.status === 'tick') {
                     // Handle the tick - Update game logic, etc.
@@ -762,7 +707,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const lobby_code = lobby_modal_input.value;
         game_modal_lobby_code.innerText = `Lobby Code: ${lobby_code}`;
 
-        let myPlayer = new Player(AppConfig.canvasWidth, AppConfig.canvasHeight, 100, 100, peerId, 0.05);
+        let myPlayer = new Player(AppConfig.canvasWidth, AppConfig.canvasHeight, 100, 100, peerId, GameConfig, 0.05);
         myPlayer.name = name;
 
         // Hide the game settings for clients
@@ -774,6 +719,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         conn = peer.connect(lobby_code);
         console.log("conn: ", conn);
+        let isPaused;
 
         const player_color = document.getElementById('player_color');
         let selectedColor;

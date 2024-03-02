@@ -128,16 +128,6 @@ export class Game {
 
     }
 
-    // never used
-
-    // addPlayer(id, x, y, playerNumber, playerName, basePlayerScale = 0.05) {
-    //     const player = new Player(this.cWidth, this.cHeight, x, y, id, basePlayerScale);
-    //     player.playerNumber = playerNumber;
-    //     player.name = playerName;
-    //     player.color = this.colors[playerNumber - 1];
-    //     this.players[id] = player;
-    // }
-
     updatePlayer(player){
 
         if (!this.gameConfig.allowGhosts) {
@@ -151,7 +141,6 @@ export class Game {
         // fetch changes to the GameConfig
         player.moveSpeed = this.gameConfig.playerSpeed;
         player.lives = player.lives < this.gameConfig.playerLives ? player.lives : this.gameConfig.playerLives;
-
         
 
         player.dx = 0;
@@ -382,27 +371,8 @@ export function renderGame(ctx, players, enemies, coins, missile, paused, AppCon
         `;
         playerInfoContainer.appendChild(playerDiv);
     });
+
     
-
-    //playerInfoContainer.innerHTML = '';
-    // Object.values(players).forEach((player, index) => {
-    //     ctx.fillStyle = player.color;
-    //     if (player.lives <= 0) {
-    //         ctx.fillStyle = 'darkgrey';
-    //     }
-    //     ctx.fillRect(player.x, player.y, player.width, player.height);
-
-    //     // update the UI scoreboard
-    //     const playerDiv = document.createElement('div');
-    //     playerDiv.className = 'player-info';
-    //     playerDiv.innerHTML = `
-    //         <p>${player.name}</p>
-    //         <p>Score: ${player.score}</p>
-    //         <p>Lives: ${player.lives}</p>
-    //     `;
-    //     playerInfoContainer.appendChild(playerDiv);
-
-    // });
     enemies.forEach(enemy => {
         ctx.fillStyle = 'red';
         ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
