@@ -1,3 +1,9 @@
+// import { AppConfig, GameConfig } from './config.js';
+import { Coin } from './coin.js';
+import { Enemy } from './enemy.js';
+import { Player } from './player.js';
+
+
 /**
  * Represents the game state and logic.
  * @class
@@ -9,7 +15,7 @@
  * @param {CanvasRenderingContext2D} context - The canvas context for rendering.
  */
 export class Game {
-    constructor(cWidth, cHeight, serverRoomName, gameConfig, context) {
+    constructor(cWidth, cHeight, serverRoomName, GameConfig, AppConfig, context) {
         this.cWidth = cWidth;
         this.cHeight = cHeight;
         this.players = {};
@@ -19,8 +25,8 @@ export class Game {
         this.missile = [];
         this.paused = true;
         this.gameOver = false;
-        this.enemySpawnRate = gameConfig.enemySpawnRate; // Spawn an enemy every second
-        this.coinSpawnRate = gameConfig.coinSpawnRate; // Spawn a coin every 0.5 seconds
+        this.enemySpawnRate = GameConfig.enemySpawnRate; // Spawn an enemy every second
+        this.coinSpawnRate = GameConfig.coinSpawnRate; // Spawn a coin every 0.5 seconds
         this.lastEnemySpawn = Date.now();
         this.lastCoinSpawn = Date.now();
         this.settings = { coinDespawn: true, coinTick: true };
@@ -30,6 +36,8 @@ export class Game {
         this.connections = {};
         this.conn = null;
         this.ctx = context;
+        this.gameConfig = GameConfig;
+        this.appConfig = AppConfig;
     }
 
     /**
@@ -68,7 +76,7 @@ export class Game {
             this.interval = setInterval(() => {
                 //this.gameTick();
                 // Broadcast the updated game state to the room
-                renderGame(this.ctx, this.players, this.enemies, this.coins, this.missile, this.paused);
+                renderGame(this.ctx, this.players, this.enemies, this.coins, this.missile, this.paused, this.appConfig);
                 // for (const conn of this.connections) {
                 //     conn.send({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
                 // }
@@ -102,7 +110,7 @@ export class Game {
         // reset players
         Object.values(this.players).forEach(player => {
             // player reset not a function, do it here?
-            player.lives = gameConfig.playerLives;
+            player.lives = this.gameConfig.playerLives;
             player.score = 0;
             player.ready = false;
             //console.log(player);
@@ -113,9 +121,9 @@ export class Game {
         this.paused = false;
         this.gameOver = false;
         this.lastEnemySpawn = Date.now(); 
-        this.lastEnemySpawn += gameConfig.spawnProtectionDurration; // add two secconds?. spawn protection
+        this.lastEnemySpawn += this.gameConfig.spawnProtectionDurration; // add two secconds?. spawn protection
         this.lastCoinSpawn = Date.now();
-        this.lastCoinSpawn += gameConfig.spawnProtectionDurration; // add two secconds?. spawn protection
+        this.lastCoinSpawn += this.gameConfig.spawnProtectionDurration; // add two secconds?. spawn protection
         this.start();
 
     }
@@ -132,13 +140,18 @@ export class Game {
 
     updatePlayer(player){
 
-        if (!GameConfig.allowGhosts) {
+        if (!this.gameConfig.allowGhosts) {
             if (player.lives <= 0) {
                 player.dx = 0;
                 player.dy = 0;
                 return;
             }
         }
+
+        // fetch changes to the GameConfig
+        player.moveSpeed = this.gameConfig.playerSpeed;
+        player.lives = player.lives < this.gameConfig.playerLives ? player.lives : this.gameConfig.playerLives;
+
         
 
         player.dx = 0;
@@ -167,21 +180,22 @@ export class Game {
         
 
         // Handle boundaries
-        player.x = Math.max(0, Math.min(player.x, AppConfig.canvasWidth - player.width));
-        player.y = Math.max(0, Math.min(player.y, AppConfig.canvasHeight - player.height));
+        player.x = Math.max(0, Math.min(player.x, this.appConfig.canvasWidth - player.width));
+        player.y = Math.max(0, Math.min(player.y, this.appConfig.canvasHeight - player.height));
 
     }
 
     spawnEnemy() {
-        if (Date.now() - this.lastEnemySpawn > gameConfig.enemySpawnRate) {
-            this.enemies.push(new Enemy(this.cWidth, this.cHeight, gameConfig));
+        //console.log(this.gameConfig);
+        if (Date.now() - this.lastEnemySpawn > this.gameConfig.enemySpawnRate) {
+            this.enemies.push(new Enemy(this.cWidth, this.cHeight, this.gameConfig));
             this.lastEnemySpawn = Date.now();
         }
     }
 
     spawnCoin() {
-        if (Date.now() - this.lastCoinSpawn > gameConfig.coinSpawnRate) {
-            const newCoin = new Coin(this.cWidth, this.cHeight, gameConfig);
+        if (Date.now() - this.lastCoinSpawn > this.gameConfig.coinSpawnRate) {
+            const newCoin = new Coin(this.cWidth, this.cHeight, this.gameConfig);
             this.coins.push(newCoin);
             this.lastCoinSpawn = Date.now();
         }
@@ -336,7 +350,7 @@ export class Game {
  * @param {Object[]} missile - An array of missile objects.
  * @param {boolean} paused - Indicates if the game is currently paused.
  */
-export function renderGame(ctx, players, enemies, coins, missile, paused) {
+export function renderGame(ctx, players, enemies, coins, missile, paused, AppConfig) {
     //if no players, continue
     if (Object.keys(players).length === 0) {
         return;
