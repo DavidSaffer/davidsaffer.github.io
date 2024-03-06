@@ -29,6 +29,15 @@ document.addEventListener("DOMContentLoaded", () => {
     let name = '';
     let peerId = null;
     
+    peer.on('error', function(err) {
+        if (err.type === 'peer-unavailable') {
+            alert('The lobby code you entered is invalid or the host has left the game');
+            go_to_lobby();
+        }
+        else {
+            console.error(err);
+        }
+    });
 
     peer.on('open', function(id) {
         peerId = id;
@@ -878,7 +887,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         conn.on('close', () => {
             alert('Connection to host lost');
-            go_to_lobby();
+
+            localStorage.setItem('reloadForFunction', 'true');
+            // 2 - Store the hosts username (we later check for the flag, and retrieve the name)
+            localStorage.setItem('userName', myPlayer.name);
+            // 3 - Reload the page (creates a new peerID, so the old lobby is destroyed)
+            location.reload(true);
         });
 
     }
