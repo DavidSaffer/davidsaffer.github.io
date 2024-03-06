@@ -262,18 +262,13 @@ export class Game {
 
     gameTick() {
         this.broadcast({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
-        // for (const conn of this.connections) {
-        //     conn.send({ type: 'gameState', players: this.players, enemies: this.enemies, coins: this.coins, missile: this.missile, paused: this.paused });
-        // }
+
         if (this.paused || this.gameOver) return;
         this.spawnEnemy();
         this.spawnCoin();
         this.checkCollisions();
         //this.handleMissiles();
         this.updateEntities();
-
-        
-        
         
         const alivePlayers = Object.values(this.players).filter(player => player.lives > 0);
         const deadPlayers = Object.values(this.players).filter(player => player.lives <= 0);
@@ -291,14 +286,9 @@ export class Game {
 
         if (gameShouldEnd) {
             this.gameOver = true;
-            console.log("game over");
             
             this.broadcast({ type: 'gameOver', players: this.players });
-            // for (const conn of this.connections) {
-            //     conn.send({ type: 'gameOver', players: this.players });
-            // }
             
-            //io.to(this.roomName).emit('gameOver', this.players); // Assume roomNumber is tracked per game instance
             this.stop(); // Stop the game loop
         }
     }
@@ -372,7 +362,7 @@ export function renderGame(ctx, players, enemies, coins, missile, paused, AppCon
         playerInfoContainer.appendChild(playerDiv);
     });
 
-    
+
     enemies.forEach(enemy => {
         ctx.fillStyle = 'red';
         ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
