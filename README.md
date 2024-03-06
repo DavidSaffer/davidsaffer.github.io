@@ -8,7 +8,9 @@ PixelBomber is a dynamic, real-time multiplayer game built with HTML5 Canvas, Ja
 PeerJS removes the need of having a dedicated server. Initially I made a version with Socket.IO, but this would require a server. The game updates at 60hz, so the server load would be high. PeerJS uses the host players' browser to calculate and communicate the game states.
 
 ### Challenges and Future Aspirations
-Throughout the development of PixelBomber, the first challenge I encountered was chosing the right library to connect clients. Once I settled on PeerJS, the hard part was managing all of the edge cases, like players disconnecting or 
+Throughout the development of PixelBomber, the first challenge I encountered was chosing the right library to connect clients. Once I settled on PeerJS, the hard part was managing all of the edge cases, like players disconnecting or joining a game that no longer exists.
+
+Immediate improvments I would like to make, are allowing players to change teams once they have already joined one. I removed this functionality to simplify the game logic.
 
 Looking ahead, plans for PixelBomber include the introduction of new gameplay features, such as power-ups and special abilities, enhancing the strategic depth of the game. It could be possible to use openAI's real time gym to train a model that can play the game. But my inital attempt was met with chalenges, mainly the asynchornus nature of PeerJS conflicting with the realtime requirment of realtime gym. 
 
