@@ -31,7 +31,6 @@ document.addEventListener("DOMContentLoaded", () => {
     
 
     peer.on('open', function(id) {
-        console.log('My peer ID is: ' + id);
         peerId = id;
 
         // Stop the loading message animation
@@ -282,7 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
         updatePlayerList('blue', blue_team);
         isHost = true;
         sendUserInputs = false;
-        initSettings();
+
         
         let gameInstance = new Game(AppConfig.canvasWidth, AppConfig.canvasHeight, peerId, GameConfig, AppConfig, ctx);
         hostGameInstance = gameInstance;
@@ -292,6 +291,58 @@ document.addEventListener("DOMContentLoaded", () => {
         userInput(myPlayer);
 
         // HOST LOCAL HTML/CSS SETUP ======================================
+        // Add game settings to the modal
+        const game_settings = document.getElementById('game_settings_container');
+        const game_settings_button = document.getElementById('game_modal_host_settings_button');
+        game_settings_button.style.display = 'inline-block';
+        game_settings_button.onclick = function() {
+            if (game_settings.style.display === 'block') {
+                game_settings.style.display = 'none';
+            } else {
+                game_settings.style.display = 'block';
+            }
+        }
+
+
+        // Function to update a specific GameConfig setting with correction for division by 1000 where needed
+        function updateConfigSetting(settingName, value, isCheckbox = false) {
+            GameConfig[settingName] = isCheckbox ? value.checked : parseInt(value, 10);
+            gameInstance.gameConfig = GameConfig;
+        }
+
+        // Since inputs like textboxes, number inputs, and checkboxes are changed, not clicked, we use 'onchange' for them
+        document.getElementById('enemySpawnRate').value = (1/GameConfig.enemySpawnRate) * 1000;
+        document.getElementById('enemySpawnRate').onchange = function() {
+            updateConfigSetting('enemySpawnRate', (1/this.value) * 1000);
+        };
+        document.getElementById('enemySpeed').value = GameConfig.enemySpeed;
+        document.getElementById('enemySpeed').onchange = function() {
+            updateConfigSetting('enemySpeed', this.value);
+        };
+        document.getElementById('coinSpawnRate').value = (1/GameConfig.coinSpawnRate) * 1000;
+        document.getElementById('coinSpawnRate').onchange = function() {
+            updateConfigSetting('coinSpawnRate', (1/this.value) * 1000);
+        };
+        document.getElementById('coinLifespan').value = GameConfig.coinLifespan / 1000;
+        document.getElementById('coinLifespan').onchange = function() {
+            updateConfigSetting('coinLifespan', this.value * 1000);
+        };
+        document.getElementById('playerLives').value = GameConfig.playerLives;
+        document.getElementById('playerLives').onchange = function() {
+            updateConfigSetting('playerLives', this.value);
+        };
+        document.getElementById('playerSpeed').value = GameConfig.playerSpeed;
+        document.getElementById('playerSpeed').onchange = function() {
+            updateConfigSetting('playerSpeed', this.value);
+        };
+        document.getElementById('spawnProtectionDuration').value = GameConfig.spawnProtectionDurration / 1000;
+        document.getElementById('spawnProtectionDuration').onchange = function() {
+            updateConfigSetting('spawnProtectionDurration', this.value * 1000); // Correcting for misspelling in your original object
+        };
+        document.getElementById('allowGhosts').checked = GameConfig.allowGhosts;
+        document.getElementById('allowGhosts').onchange = function() {
+            updateConfigSetting('allowGhosts', this, true);
+        };
 
         // Color Selection Setup
         let player_color = document.getElementById('player_color');
@@ -386,7 +437,6 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('color_selector_label').style.display = 'none';
             document.getElementById('selected_color_label').innerText = `Color: ${selectedColor}`;
 
-            console.log('myPlayer.color', myPlayer.color);
             if (team === 'Red Team') {
                 red_team.push({ name, peerId });
                 gameInstance.players[peerId] = myPlayer;
@@ -617,60 +667,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    function initSettings() {
-        // Add game settings to the modal
-        const game_settings = document.getElementById('game_settings_container');
-        const game_settings_button = document.getElementById('game_modal_host_settings_button');
-        game_settings_button.style.display = 'inline-block';
-        game_settings_button.onclick = function() {
-            if (game_settings.style.display === 'block') {
-                game_settings.style.display = 'none';
-            } else {
-                game_settings.style.display = 'block';
-            }
-        }
-
-
-        // Function to update a specific GameConfig setting with correction for division by 1000 where needed
-        function updateConfigSetting(settingName, value, isCheckbox = false) {
-            GameConfig[settingName] = isCheckbox ? value.checked : parseInt(value, 10);
-            gameInstance.gameConfig = GameConfig;
-        }
-
-        // Since inputs like textboxes, number inputs, and checkboxes are changed, not clicked, we use 'onchange' for them
-        document.getElementById('enemySpawnRate').value = (1/GameConfig.enemySpawnRate) * 1000;
-        document.getElementById('enemySpawnRate').onchange = function() {
-            updateConfigSetting('enemySpawnRate', (1/this.value) * 1000);
-        };
-        document.getElementById('enemySpeed').value = GameConfig.enemySpeed;
-        document.getElementById('enemySpeed').onchange = function() {
-            updateConfigSetting('enemySpeed', this.value);
-        };
-        document.getElementById('coinSpawnRate').value = (1/GameConfig.coinSpawnRate) * 1000;
-        document.getElementById('coinSpawnRate').onchange = function() {
-            updateConfigSetting('coinSpawnRate', (1/this.value) * 1000);
-        };
-        document.getElementById('coinLifespan').value = GameConfig.coinLifespan / 1000;
-        document.getElementById('coinLifespan').onchange = function() {
-            updateConfigSetting('coinLifespan', this.value * 1000);
-        };
-        document.getElementById('playerLives').value = GameConfig.playerLives;
-        document.getElementById('playerLives').onchange = function() {
-            updateConfigSetting('playerLives', this.value);
-        };
-        document.getElementById('playerSpeed').value = GameConfig.playerSpeed;
-        document.getElementById('playerSpeed').onchange = function() {
-            updateConfigSetting('playerSpeed', this.value);
-        };
-        document.getElementById('spawnProtectionDuration').value = GameConfig.spawnProtectionDurration / 1000;
-        document.getElementById('spawnProtectionDuration').onchange = function() {
-            updateConfigSetting('spawnProtectionDurration', this.value * 1000); // Correcting for misspelling in your original object
-        };
-        document.getElementById('allowGhosts').checked = GameConfig.allowGhosts;
-        document.getElementById('allowGhosts').onchange = function() {
-            updateConfigSetting('allowGhosts', this, true);
-        };
-    }
 
     /**
      * Client function. Connects to a host game instance using the provided lobby code.
@@ -700,9 +696,12 @@ document.addEventListener("DOMContentLoaded", () => {
         let selectedColor;
 
         document.getElementById('game_modal_leave_button').onclick = function() {
-            ctx.clearRect(0, 0, AppConfig.canvasWidth, AppConfig.canvasHeight);
-            hideGameModal();    
-            go_to_lobby();
+            // 1 - Set a flag that the host left
+            localStorage.setItem('reloadForFunction', 'true');
+            // 2 - Store the hosts username (we later check for the flag, and retrieve the name)
+            localStorage.setItem('userName', myPlayer.name);
+            // 3 - Reload the page (creates a new peerID, so the old lobby is destroyed)
+            location.reload(true);
         }
 
         document.querySelectorAll('.game_modal_join_button').forEach(button => {
@@ -731,7 +730,6 @@ document.addEventListener("DOMContentLoaded", () => {
             // remove this color optoin
             player_color.remove(player_color.selectedIndex);
             // Broadcast the change
-            console.log("client used color. selectedColor, index", selectedColor, player_color.selectedIndex);
             conn.send({ type: 'client used color', color: selectedColor, index: player_color.selectedIndex });
             // Remove the color selector, and show the color label
             player_color.style.display = 'none';
