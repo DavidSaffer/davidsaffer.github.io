@@ -53,6 +53,8 @@
     background-color: rgba(0, 0, 0, 0.4); /* Semi-transparent black background */
     align-items: center; /* Center content vertically */
     justify-content: center; /* Center content horizontally */
+
+    overflow: auto; /* Allow scrolling if the content overflows */
 }
 
 /* Modal content box styling */

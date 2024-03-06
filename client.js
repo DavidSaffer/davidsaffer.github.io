@@ -943,7 +943,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const gameEndModal = document.getElementById('game_end_modal');
         const statusElement = document.getElementById('game_end_status');
         const all_players_scores = document.getElementById('all_players_scores');
-        
+
         gameModal.style.display = 'none';
         statusElement.innerText = result;
 
@@ -993,3 +993,5 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 });
+  
+  
